@@ -23,6 +23,8 @@ export const DEFAULTS = {
   // Marriage, family and everyday life, written by the candidate. Pre-filled so it works out of the box; edit it in Options.
   personal: "Married to Anna since 2019, daughter Mia (4). Weekends: hiking, cooking Vietnamese food.",
   jobDesc: "",
+  jobBrief: "", // web research on the target company plus a deep read of the job description (Markdown)
+  jobBriefFor: "", // the jobDesc text that jobBrief was made from (stale when they differ)
   mode: "company", // "company": a job interview; "free": a free conversation where you bring the other person round to your view
   // Free conversation: everything about it in one box (topic, your intention and point of view, questions to ask).
   freeTopic: "",
@@ -51,6 +53,8 @@ export const SPEAKER_LABEL = { interviewer: "Interviewer", me: "Me" };
 // In a free conversation the other side isn't interviewing you: their lines read "Them".
 const FREE_LABEL = { interviewer: "Them", me: "Me" };
 export const isFree = (mode) => mode === "free";
+// The company research is used only while the job description is the one it was made from.
+export const jobBriefFresh = (s) => !!s.jobBrief?.trim() && (s.jobBriefFor ?? "").trim() === (s.jobDesc ?? "").trim();
 export const speakerLabel = (speaker, mode) => (isFree(mode) ? FREE_LABEL : SPEAKER_LABEL)[speaker];
 
 // Fields that fall back to their default when left empty, not only when never saved (Options saves every field,

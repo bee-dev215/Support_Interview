@@ -236,9 +236,19 @@
           </label>
         </div>
         <div class="field" data-mode="company">
-          <span class="field-label">Job description</span>
-          <span class="field-hint">Company, role, stack and the job description. Update it before each interview; it's saved with the interview for the feedback report. It also guides where the conversation is steered: toward your strengths that matter for this role.</span>
-          <textarea id="jobDesc" class="textarea job" aria-label="Job description" placeholder="e.g. Acme Corp · Senior Backend Engineer (remote)&#10;Stack: Go, PostgreSQL, Kafka, AWS&#10;&#10;Paste the job description here…"></textarea>
+          <span class="field-label field-row">
+            Job description
+            <button type="button" class="btn btn-sm" id="researchJob">Research company</button>
+          </span>
+          <span class="field-hint">Company name (and website if you have it), role, stack and the full job description. Update it before each interview; it's saved with the interview for the feedback report. Then click <b>Research company</b>: it searches the web for the company (products, business model, recent news, tech stack, culture and values, competitors) and analyzes the job against your CV profile. Answers use it whenever they ask about the company or the role, and to pick your examples that fit it best.</span>
+          <div id="jobNotice" hidden></div>
+          <span class="field-hint key-status" id="jobState" aria-live="polite"></span>
+          <textarea id="jobDesc" class="textarea job" aria-label="Job description" placeholder="e.g. Acme Corp (acme.com) · Senior Backend Engineer (remote)&#10;Stack: Go, PostgreSQL, Kafka, AWS&#10;&#10;Paste the job description here…"></textarea>
+        </div>
+        <div class="field" data-mode="company">
+          <span class="field-label field-row">Company research <span class="muted small" id="jobBriefStats"></span></span>
+          <span class="field-hint">Company snapshot, recent news, the role decoded, your fit and gaps, ready answers to "What do you know about us?" and "Why us?", likely questions and questions to ask them. Read it before the interview and fix anything that's wrong; your edits are used as they are.</span>
+          <textarea id="jobBrief" class="textarea mono profile" aria-label="Company research" placeholder="Filled in by Research company. You can also paste or edit notes here."></textarea>
         </div>
         <div class="field" data-mode="free">
           <span class="field-label field-row">

@@ -1,6 +1,6 @@
 import { DEFAULTS, KEY_FIELDS, MODELS, OPENAI_MODELS, PROVIDERS, aiKey, getSettings, isFree, providerName } from "./lib/settings.js";
 import { hasPassphrase, isUnlocked, lock, needsPassphrase, resetPassphrase, seal, setPassphrase, unlock } from "./lib/vault.js";
-import { analyzeCv, analyzeTopic, checkAiKey, researchEmployers } from "./lib/claude.js";
+import { analyzeCv, analyzeTopic, checkAiKey, researchEmployers, researchJob } from "./lib/claude.js";
 import { checkDeepgram } from "./lib/deepgram.js";
 import { icon } from "./lib/icons.js";
 import { getShortcuts, keyCaps, openShortcutSettings } from "./lib/shortcuts.js";
@@ -543,6 +543,63 @@ function updateEmployerStats() {
 }
 $("employers").addEventListener("input", updateEmployerStats);
 updateEmployerStats();
+
+/* ---------- Target company: web research and job analysis ---------- */
+
+// The brief is used only while the job description is the one it was made from; this line says whether it is.
+let researchedJob = (await chrome.storage.local.get("jobBriefFor")).jobBriefFor ?? "";
+let researchingJob = false;
+function showJobState() {
+  const job = $("jobDesc").value.trim();
+  const brief = $("jobBrief").value.trim();
+  const ready = job && brief && job === researchedJob.trim();
+  $("jobState").hidden = !job || researchingJob;
+  $("jobState").className = `field-hint key-status${ready ? " is-ok" : brief ? " is-warn" : ""}`;
+  $("jobState").innerHTML = ready
+    ? `${icon("check")}<span>Researched: answers use the company research below.</span>`
+    : brief
+      ? `${icon("alert")}<span>The job description changed since the research, so it isn't used. Click <b>Research company</b> again.</span>`
+      : `${icon("info")}<span>Not researched yet. Click <b>Research company</b> when the job description is complete.</span>`;
+  const sections = (brief.match(/^## (?!Sources)/gm) ?? []).length;
+  $("jobBriefStats").textContent = brief ? `${sections} sections · ${brief.split(/\s+/).length.toLocaleString()} words` : "";
+}
+
+function jobNotice(kind, html) {
+  $("jobNotice").hidden = !html;
+  $("jobNotice").innerHTML = html ? `<div class="notice ${kind}">${icon(kind === "notice-error" ? "alert" : kind === "notice-success" ? "check" : "info")}<span class="grow">${html}</span></div>` : "";
+}
+
+$("researchJob").addEventListener("click", async () => {
+  if (researchingJob) return;
+  const settings = readForm();
+  const job = settings.jobDesc;
+  if (!job) return jobNotice("notice-warn", "Paste the company and job description first.");
+  if (!aiKey(settings)) return jobNotice("notice-warn", `Add your ${providerName(settings)} API key in step 1 first.`);
+
+  researchingJob = true;
+  $("researchJob").disabled = true;
+  $("researchJob").textContent = "Researching…";
+  jobNotice("", `Searching the web for the company and analyzing the role${settings.profile ? " against your profile" : ""}. This takes a few minutes; keep this page open.${settings.profile ? "" : " Add your CV in step 4 first for a fit analysis and tailored answers."}`);
+  showJobState();
+  try {
+    const brief = await researchJob(settings, job, settings.profile);
+    $("jobBrief").value = brief;
+    await saveNow();
+    await chrome.storage.local.set({ jobBriefFor: job });
+    researchedJob = job;
+    jobNotice("notice-success", "Company research ready and saved. Read it before the interview and fix anything that's wrong.");
+  } catch (err) {
+    jobNotice("notice-error", `Research failed: ${err.message.replace(/</g, "&lt;")}`);
+  } finally {
+    researchingJob = false;
+    $("researchJob").disabled = false;
+    $("researchJob").textContent = "Research company";
+    showJobState();
+  }
+});
+$("jobDesc").addEventListener("input", showJobState);
+$("jobBrief").addEventListener("input", showJobState);
+showJobState();
 
 /* ---------- Free conversation: topic analysis ---------- */
 

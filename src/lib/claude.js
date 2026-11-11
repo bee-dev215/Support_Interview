@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import * as z from "zod/v4";
 import * as openai from "./openai.js";
-import { isFree, speakerLabel } from "./settings.js";
+import { isFree, jobBriefFresh, speakerLabel } from "./settings.js";
 
 const isOpenAI = (settings) => settings.provider === "openai";
 const free = (settings) => isFree(settings.mode);
@@ -83,6 +83,48 @@ Rules:
 - Simple, clear English that is easy to read aloud. Under 350 words per company.
 - If the candidate worked for a client through an agency or outsourcing company, cover both.
 - No introduction or conclusion; start directly with the first company.`;
+
+const JOB_RESEARCH_PROMPT = `TASK: The candidate above has a job interview with the company in the TARGET JOB section. Prepare them deeply: research the company with web search (official site, careers and engineering pages, engineering blog, recent news, funding and press releases, product pages, public reviews of working there) and analyze the job description line by line against the candidate's profile.
+
+First identify the company: use the name, website, location and product named in the job. If several companies share the name, pick the one that matches the role and say which. If the job is posted anonymously or through a recruiter and the company can't be identified, say so in one line and research the industry and the kind of company described instead.
+
+Write in Markdown with exactly these sections:
+## Company snapshot
+Name, website, one plain sentence on what it does and for whom, founded (when, by whom), headquarters and offices, size (employees, revenue or users, with the year), ownership (public, private, funding stage and main investors), and a one-line mission in their own words.
+## Products and business model
+The main products or services, one line each, using the company's own names for them; who the customers are; how it makes money.
+## Recent news
+The 4-6 most relevant developments of the last 18 months (launches, funding, acquisitions, partnerships, leadership changes, layoffs or reorganizations, awards), each with its month and year.
+## Market and competitors
+The sector, the 3-5 main competitors, what sets this company apart, and one current trend or challenge in its market.
+## Tech and engineering
+What is publicly known about the stack, architecture, scale and engineering practices (engineering blog posts, talks, open-source projects, other job ads). Mark what is confirmed by a source and what only comes from this job description.
+## Culture and values
+Their stated values and how they work (remote or office, pace, team structure); recurring themes from employee reviews, labeled as such. Name the 2-3 values the candidate should show in their answers.
+## The role, decoded
+- **What they really need:** the business problem this hire solves, in two sentences.
+- **Must-haves:** the requirements that will decide the interview, most important first.
+- **Nice-to-haves:** the rest.
+- **Reading between the lines:** seniority signals, team situation (new team, scaling, replacing someone), on-call or ownership expectations, anything unusual in the wording.
+- **Likely interview format:** the rounds and topics to expect, from the job ad or public reports of interviews here.
+## Fit with the candidate
+A table: requirement | the strongest matching evidence from the profile (project, employer, number) | strength (Strong, Partial or Gap). Then, for each Partial or Gap, one honest spoken line that bridges it (related experience plus how they'd close it); never claim experience the profile doesn't show.
+## Stories to lead with
+The 3-4 examples from the profile that best match this role, each with the requirement or value it proves and the angle to tell it from.
+## Ready answers
+Spoken answers of 3-5 connected sentences, written to say out loud, for: "What do you know about us?", "Why do you want to work here?", "Why this role?", "Why should we hire you?", "Tell me about yourself" (tailored to this role), and "Where do you see yourself in a few years?". Each uses real specifics from the research and the profile.
+## Likely questions
+8-12 questions they will probably ask: technical ones on their stack and domain, behavioral ones tied to their values, and company-specific ones. For each, a one-line answer seed grounded in the profile.
+## Questions to ask them
+5-7 sharp questions that show you did your homework, each tied to something specific in the research.
+## Careful
+Topics to handle with care (recent layoffs, controversies, a gap in the candidate's profile, salary or location constraints in the ad), with how to handle each, and the facts above the candidate should double-check.
+
+Rules:
+- Use only facts you found or are confident about; give numbers with the year they refer to. When something can't be verified, write "Not verified" instead of guessing.
+- Keep researched facts about the company apart from the candidate's own experience, which comes only from the profile. If there is no profile, skip the fit table and keep the rest general.
+- Simple, clear English that is easy to read aloud; spoken lines in natural, everyday American English with contractions. About 1,800 words in total.
+- No introduction or conclusion; start directly with the first section.`;
 
 /* ---------- Free conversation: bring the other person round to your point of view ---------- */
 
@@ -300,9 +342,27 @@ A short, friendly follow-up message to Them that recaps what you agreed on and p
 const MAX_CONTINUATIONS = 5; // server-side search loops that pause (pause_turn) and get resumed
 
 // Background briefs on each employer in the profile, researched on the web, as Markdown.
-export async function researchEmployers(settings, profile) {
-  const prompt = `CANDIDATE PROFILE:\n${profile}\n\n${RESEARCH_PROMPT}`;
-  if (isOpenAI(settings)) return researchEmployersOpenAI(settings, prompt);
+export function researchEmployers(settings, profile) {
+  return webResearch(settings, `CANDIDATE PROFILE:\n${profile}\n\n${RESEARCH_PROMPT}`, {
+    maxUses: 25,
+    refusal: "The model declined to research these companies.",
+    empty: "No research came back. Check that your CV profile lists your employers.",
+  });
+}
+
+// The target company researched on the web, plus a deep read of the job description against the profile, as Markdown.
+export function researchJob(settings, jobDesc, profile) {
+  const prompt = `CANDIDATE PROFILE:\n${profile || "(no profile provided)"}\n\nTARGET JOB (company and job description, pasted by the candidate):\n${jobDesc}\n\n${JOB_RESEARCH_PROMPT}`;
+  return webResearch(settings, prompt, {
+    maxUses: 15,
+    refusal: "The model declined to research this company.",
+    empty: "No research came back. Check that the job description names the company.",
+  });
+}
+
+// A long answer written after web searches; Anthropic's search turns can pause and are resumed.
+async function webResearch(settings, prompt, { maxUses, refusal, empty }) {
+  if (isOpenAI(settings)) return webResearchOpenAI(settings, prompt, { refusal, empty });
   const client = makeClient(settings.anthropicKey);
   // The dynamic-filtering search tool needs Opus or Sonnet; Haiku takes the basic one.
   const type = settings.model === "claude-haiku-5-5" ? "web_search_20250305" : "web_search_20260209";
@@ -314,10 +374,10 @@ export async function researchEmployers(settings, profile) {
       max_tokens: 32000,
       output_config: { effort: "medium" },
       ...fallbackParams(settings.model),
-      tools: [{ type, name: "web_search", max_uses: 25 }],
+      tools: [{ type, name: "web_search", max_uses: maxUses }],
       messages,
     }).finalMessage();
-    if (msg.stop_reason === "refusal") throw new Error("The model declined to research these companies.");
+    if (msg.stop_reason === "refusal") throw new Error(refusal);
     blocks.push(...msg.content);
     if (msg.stop_reason !== "pause_turn" || i >= MAX_CONTINUATIONS) break;
     // Long search turns pause; sending the turn back makes the server pick up where it stopped.
@@ -326,14 +386,14 @@ export async function researchEmployers(settings, profile) {
   const text = blocks.filter((b) => b.type === "text");
   // Cited answers arrive split into many text blocks, so join them without separators.
   const body = text.map((b) => b.text).join("").trim();
-  if (!body) throw new Error("No research came back. Check that your CV profile lists your employers.");
+  if (!body) throw new Error(empty);
   const sources = new Map();
   for (const c of text.flatMap((b) => b.citations ?? [])) if (c.url && !sources.has(c.url)) sources.set(c.url, c.title || c.url);
   const list = [...sources].slice(0, 20).map(([url, title]) => `- ${title}: ${url}`).join("\n");
   return list ? `${body}\n\n## Sources\n${list}` : body;
 }
 
-async function researchEmployersOpenAI(settings, prompt) {
+async function webResearchOpenAI(settings, prompt, { refusal, empty }) {
   const msg = await openai.complete(settings.openaiKey, {
     model: settings.openaiModel,
     max_output_tokens: 32000,
@@ -341,8 +401,8 @@ async function researchEmployersOpenAI(settings, prompt) {
     tools: [{ type: "web_search" }],
     input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
   });
-  if (msg.stop_reason === "refusal") throw new Error("The model declined to research these companies.");
-  if (!msg.text.trim()) throw new Error("No research came back. Check that your CV profile lists your employers.");
+  if (msg.stop_reason === "refusal") throw new Error(refusal);
+  if (!msg.text.trim()) throw new Error(empty);
   return msg.text.trim();
 }
 
@@ -381,7 +441,9 @@ const INTERVIEW_LANGUAGE = `- Sound like a native American English speaker talki
 - Use interview signposts where they help the interviewer follow, a few per answer and never the same one back to back: "In my last role at ...", "One example that comes to mind is ...", "What I did was ...", "The impact was ...", "Looking back, I'd ...". Interview terms (ownership, impact, stakeholders, trade-offs, priorities, scalability, reliability, code review, mentoring, root cause) only where they are accurate and backed by a specific.
 - Never pad with generic self-praise ("team player", "fast learner", "problem-solver", "passionate about") or filler like "That's a great question". Clarifying lines ("Just to make sure I understand, ...", "Do you mean ... or ...?") only when the question is genuinely unclear.
 - Greetings and closings stay simple and warm: "Good to meet you, thanks for having me.", "Thanks so much for your time today, I really enjoyed this."
-- When the interviewer asks about one of the candidate's previous employers (what the company does, its history, its industry, customers or competitors), answer from the EMPLOYER BRIEFS: say what the company does and how it makes money in one or two plain sentences, then connect it to the candidate's own work there. Never present a researched fact as something the candidate did.`;
+- When the interviewer asks about one of the candidate's previous employers (what the company does, its history, its industry, customers or competitors), answer from the EMPLOYER BRIEFS: say what the company does and how it makes money in one or two plain sentences, then connect it to the candidate's own work there. Never present a researched fact as something the candidate did.
+- When the interviewer asks about their own company or the role ("What do you know about us?", "Why us?", "Why this role?", their product, customers, competitors, values or recent news), answer from the TARGET COMPANY BRIEF: show real, specific knowledge (a named product, a recent launch or milestone, one of their values) in a sentence or two, then tie it to the candidate's own experience and what they'd bring. Sound informed and curious, not like reciting their website; never claim inside knowledge, and never say the candidate used their product unless the profile says so. Use the brief's ready answers as material, not a script.
+- Throughout the interview, aim at what this company needs: prefer the profile examples that match the brief's must-haves and the company's stack, show the values it names, use the company's own names for its products, and bridge known gaps the way the brief suggests.`;
 
 // Where the substance comes from and how to keep it fresh, shared by answers and lead moves.
 const SUBSTANCE = `Substance: specific, varied, true, and never a recital of the CV.
@@ -698,7 +760,10 @@ function freeSystemBlocks({ freeTopic, freePlan, freePlanTopic }) {
   ];
 }
 
-function interviewSystemBlocks({ profile, jobDesc, employers, projects, personal }) {
+function interviewSystemBlocks(settings) {
+  const { profile, jobDesc, employers, projects, personal } = settings;
+  // A brief made for an earlier job description could describe the wrong company, so it's left out.
+  const company = jobBriefFresh(settings) ? `\n\nTARGET COMPANY BRIEF (web research on the company you're interviewing with and an analysis of this role against your profile; company facts, not the candidate's own achievements):\n${settings.jobBrief}` : "";
   const briefs = employers ? `\n\nEMPLOYER BRIEFS (researched background on the candidate's previous employers; general company facts, not the candidate's own achievements):\n${employers}` : "";
   const details = projects ? `\n\nPROJECT DETAILS (real specifics from the candidate's own work that the CV leaves out, written by the candidate; as true as the profile):\n${projects}` : "";
   const life = personal ? `\n\nPERSONAL LIFE (the candidate's marriage, family and everyday life, written by the candidate):\n${personal}` : "";
@@ -706,7 +771,7 @@ function interviewSystemBlocks({ profile, jobDesc, employers, projects, personal
     { type: "text", text: COPILOT_ROLE },
     {
       type: "text",
-      text: `CANDIDATE PROFILE:\n${profile || "(no profile provided)"}${details}${briefs}${life}\n\nTARGET ROLE / COMPANY:\n${jobDesc || "(not provided)"}`,
+      text: `CANDIDATE PROFILE:\n${profile || "(no profile provided)"}${details}${briefs}${life}\n\nTARGET ROLE / COMPANY:\n${jobDesc || "(not provided)"}${company}`,
       // Stable prefix -> cached across every request in the interview.
       cache_control: { type: "ephemeral", ttl: "1h" },
     },
@@ -907,7 +972,7 @@ export function streamFeedback(settings, record) {
   const t0 = record.transcript[0]?.t ?? record.startedAt;
   const readings = (record.rapport ?? []).map((r) =>
     `${clock(r.t - t0)} ${r.rapport}/10 ${r.tone}${r.humor ? ", humor" : ""} (${r.trend})`).join("\n");
-  const s = { ...settings, mode: record.mode ?? "company", jobDesc: record.jobDesc, freeTopic: record.freeTopic ?? "", freePlan: record.freePlan ?? "", freePlanTopic: (record.freeTopic ?? "").trim() };
+  const s = { ...settings, mode: record.mode ?? "company", jobDesc: record.jobDesc, jobBrief: record.jobBrief ?? "", jobBriefFor: record.jobDesc ?? "", freeTopic: record.freeTopic ?? "", freePlan: record.freePlan ?? "", freePlanTopic: (record.freeTopic ?? "").trim() };
   const base = (free(s) ? FREE_FEEDBACK_TASK : FEEDBACK_TASK) + STRONGER_STYLE;
   const task = readings ? `${base}\n\nRapport readings taken during the ${free(s) ? "conversation" : "interview"} (time rapport tone):\n${readings}` : base;
   return streamTask(s, record.transcript, task, "high", 16000);

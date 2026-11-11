@@ -1,4 +1,4 @@
-import { aiKey, getSettings, isFree, providerName } from "./lib/settings.js";
+import { aiKey, getSettings, isFree, jobBriefFresh, providerName } from "./lib/settings.js";
 import { analyzeDirection, analyzeRapport, pickBestAnswer, streamAnalysis, streamAnswer, streamLead, streamLookalike, warmCache } from "./lib/claude.js";
 import { classify } from "./lib/detect.js";
 import { addRecord } from "./lib/history.js";
@@ -191,7 +191,10 @@ async function startCapture(tab) {
   if (isFree(s.mode)) {
     status(s.freeTopic ? "Free conversation: listening..." : "Free conversation: listening. No topic yet: add it in Options so replies can steer toward your view.", s.freeTopic ? "info" : "warn");
   } else {
-    status(s.profile ? "Listening to the conversation..." : "Listening. No CV profile yet: answers will be generic.", s.profile ? "info" : "warn");
+    const warning = !s.profile ? "Listening. No CV profile yet: answers will be generic."
+      : s.jobDesc && !jobBriefFresh(s) ? "Listening. The company isn't researched for this job description yet: click Research company in Options."
+      : "";
+    status(warning || "Listening to the conversation...", warning ? "warn" : "info");
   }
   warmCache(s).catch(() => {}); // best effort
 }
@@ -238,6 +241,7 @@ async function endMeeting(reason) {
       endReason: reason,
       mode: s.mode,
       jobDesc: isFree(s.mode) ? "" : s.jobDesc,
+      jobBrief: !isFree(s.mode) && jobBriefFresh(s) ? s.jobBrief : "",
       // The plan only if it was made from this topic.
       ...(isFree(s.mode) && { freeTopic: s.freeTopic, freePlan: s.freePlanTopic === s.freeTopic.trim() ? s.freePlan : "" }),
       transcript: session.transcript,
