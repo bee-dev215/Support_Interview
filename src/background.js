@@ -29,10 +29,12 @@ let leadTimer = null;
 // Persisted in chrome.storage.session so they survive service-worker restarts: the worker can be
 // stopped during a long silence while the offscreen document keeps capturing.
 let session = emptySession(null);
-let capturingTabId = null;
-const ready = chrome.storage.session.get(["session", "capturingTabId"]).then((r) => {
+let capturingTabId = null; // the tab the session was started from; non-null while listening (whatever the source)
+let captureWindowId = null; // the computer-audio window (Call audio = "Computer audio")
+const ready = chrome.storage.session.get(["session", "capturingTabId", "captureWindowId"]).then((r) => {
   if (r.session) session = r.session;
   capturingTabId = r.capturingTabId ?? null;
+  captureWindowId = r.captureWindowId ?? null;
   // A stream in flight when the worker stopped is gone; don't leave its card spinning.
   for (const a of session.answers ?? []) if (!a.done) Object.assign(a, { done: true, stopped: true });
   updateBadge();
@@ -161,17 +163,33 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 const activeTab = async () => (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
 
+// Where the other side's voice comes from (Options -> Call audio):
+//   tab    - this browser tab: any web call (Meet, Google Voice, Zoom/Teams/Webex web, WhatsApp Web, an AI interviewer)
+//   system - everything the computer plays: desktop apps (Zoom, Teams, Skype, WhatsApp), softphones for a second
+//            number, mobile calls through Phone Link. Needs a screen share with system audio (capture.html).
+//   device - an audio input device: Stereo Mix, VB-Cable, or a phone connected by cable or Bluetooth
+const SOURCES = ["tab", "system", "device"];
+const sourceOf = (s) => (SOURCES.includes(s.callSource) ? s.callSource : "tab");
+// Tab events (closed, navigated away, "Leave call") end the call only when the call is in that tab.
+const inTab = () => (session.source ?? "tab") === "tab";
+
 async function startCapture(tab) {
   await ready;
   if (capturingTabId !== null) return status("Already listening.");
-  if (!tab) return status("Open your interview's tab, then click the extension icon on it.", "warn");
+  if (!tab) return status("Open your call's tab, then click the extension icon on it.", "warn");
   lastProblem = null;
-  // Any website works (Meet, Zoom, Teams, an AI interviewer...). The URL is hidden when we have no access to
-  // the tab yet; then tabCapture decides, and startFailed explains.
-  if (tab.url && !/^https?:\/\//.test(tab.url)) {
-    return status("Chrome doesn't allow listening to this page. Open your interview's website, then click the extension icon on that tab.", "warn");
-  }
   const s = await getSettings();
+  const source = sourceOf(s);
+  // Any website works. The URL is hidden when we have no access to the tab yet; then tabCapture decides, and
+  // startFailed explains.
+  if (source === "tab" && tab.url && !/^https?:\/\//.test(tab.url)) {
+    return status("Chrome doesn't allow listening to this page. Open your call's website, then click the extension icon on that tab. For a call in a desktop app or on your phone, choose Computer audio in Options → Call audio.", "warn");
+  }
+  if (source === "device" && !s.callDeviceId) {
+    status("Choose the device your call plays through in Options → Call audio first.", "error");
+    chrome.runtime.openOptionsPage();
+    return;
+  }
   if (!aiKey(s) || !s.deepgramKey) {
     status(s.keysLocked ? "Your API keys are locked. Enter your passphrase in Options, then start again."
       : `Set your ${providerName(s)} and Deepgram API keys in Options first.`, "error");
@@ -179,15 +197,25 @@ async function startCapture(tab) {
     return;
   }
 
-  const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
+  const streamId = source === "tab" ? await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }) : null;
   await ensureOffscreen();
-  // A different tab or meeting means a different interview; resuming the same one keeps the transcript.
-  const meetingUrl = meetingBase(tab.url);
-  if (session.tabId !== tab.id || session.meetingUrl !== meetingUrl) resetSession(tab.id);
-  Object.assign(session, { meetingUrl, title: tab.title || meetingUrl, startedAt: session.startedAt ?? Date.now() });
+  // A different tab, meeting or audio source means a different conversation; resuming the same one keeps the
+  // transcript. Calls outside a tab don't belong to the tab they were started from.
+  const meetingUrl = source === "tab" ? meetingBase(tab.url) : `${source}:${source === "device" ? s.callDeviceId : ""}`;
+  if ((source === "tab" && session.tabId !== tab.id) || session.meetingUrl !== meetingUrl) resetSession(tab.id);
+  const title = source === "tab" ? tab.title || meetingUrl : source === "system" ? "Call (computer audio)" : "Call (audio device)";
+  Object.assign(session, { source, meetingUrl, title: session.title || title, startedAt: session.startedAt ?? Date.now() });
   save();
   setCapturing(tab.id);
-  toOffscreen({ type: "start-capture", streamId, deepgramKey: s.deepgramKey, language: s.language, captureMic: s.captureMic, micDeviceId: s.micDeviceId });
+  toOffscreen({
+    type: "start-capture", source, streamId, callDeviceId: s.callDeviceId,
+    deepgramKey: s.deepgramKey, language: s.language, captureMic: s.captureMic, micDeviceId: s.micDeviceId,
+  });
+  warmCache(s).catch(() => {}); // best effort
+  if (source === "system") {
+    await openCaptureWindow();
+    return status("Computer audio: in the window that opened, click Share computer audio, pick Entire screen and turn on \"Also share system audio\".", "warn");
+  }
   if (isFree(s.mode)) {
     status(s.freeTopic ? "Free conversation: listening..." : "Free conversation: listening. No topic yet: add it in Options so replies can steer toward your view.", s.freeTopic ? "info" : "warn");
   } else {
@@ -196,8 +224,25 @@ async function startCapture(tab) {
       : "";
     status(warning || "Listening to the conversation...", warning ? "warn" : "info");
   }
-  warmCache(s).catch(() => {}); // best effort
 }
+
+// Opens the computer-audio window, or brings it forward if it's already open.
+async function openCaptureWindow() {
+  if (captureWindowId !== null && (await chrome.windows.update(captureWindowId, { focused: true, state: "normal" }).then(() => true, () => false))) return;
+  const win = await chrome.windows.create({ url: "capture.html", type: "popup", width: 500, height: 440, focused: true });
+  captureWindowId = win.id;
+  chrome.storage.session.set({ captureWindowId });
+}
+
+// Closing the computer-audio window stops hearing the call, so pause rather than carry on with the mic only.
+chrome.windows.onRemoved.addListener((windowId) => ready.then(async () => {
+  if (windowId !== captureWindowId) return;
+  captureWindowId = null;
+  chrome.storage.session.set({ captureWindowId });
+  if (capturingTabId === null || session.source !== "system") return;
+  await stopCapture({ quiet: true });
+  status("The computer audio window was closed, so listening is paused. Click Resume to share your computer's audio again.", "warn");
+}));
 
 // Start / Resume button in the panel. Resume prefers the paused interview's tab; Start uses the tab in view.
 async function startFromPanel() {
@@ -208,13 +253,14 @@ async function startFromPanel() {
   return startCapture(paused ?? (await activeTab()));
 }
 
-async function stopCapture() {
+async function stopCapture({ quiet = false } = {}) {
   clearTimeout(leadTimer);
-  toOffscreen({ type: "stop-capture" });
+  toOffscreen({ type: "stop-capture" }); // the computer-audio window hears it too and closes itself
   currentAnswer?.abort();
   setCapturing(null);
   if (await chrome.offscreen.hasDocument()) await chrome.offscreen.closeDocument();
-  status("Paused. Click Resume to continue, or End & get feedback when the interview is over.");
+  if (captureWindowId !== null) chrome.windows.remove(captureWindowId).catch(() => {});
+  if (!quiet) status("Paused. Click Resume to continue, or End & get feedback when the call is over.");
 }
 
 // Meeting over: save it to history and open the feedback report in its own tab
@@ -273,13 +319,14 @@ async function ensureOffscreen() {
   await chrome.offscreen.createDocument({
     url: "offscreen.html",
     reasons: ["USER_MEDIA"],
-    justification: "Capture the interview tab's audio and microphone for live transcription",
+    justification: "Capture the call's audio and microphone for live transcription",
   });
 }
 
 function emptySession(tabId) {
+  // source: where the call's audio comes from (see SOURCES).
   // photo: the latest uploaded face screenshot, kept for Regenerate; never saved to history.
-  return { tabId, meetingUrl: null, title: "", startedAt: null, transcript: [], insights: "", rapport: [], direction: null, answers: [], photo: null };
+  return { tabId, source: null, meetingUrl: null, title: "", startedAt: null, transcript: [], insights: "", rapport: [], direction: null, answers: [], photo: null };
 }
 
 const snapshot = () => ({
@@ -305,13 +352,13 @@ function resetSession(tabId = session.tabId) {
 
 // Both wait for `ready`: these events can be what wakes the worker, before capturingTabId is restored.
 chrome.tabs.onRemoved.addListener((tabId) => ready.then(() => {
-  if (tabId === capturingTabId) endMeeting("Interview tab closed");
+  if (tabId === capturingTabId && inTab()) endMeeting("Call tab closed");
 }));
 
 // Navigating the interview's tab away from the meeting (another Meet code, or another site) ends it. A URL we
 // lost access to (activeTab ends at a cross-origin navigation) reads as undefined, which counts as leaving.
 chrome.tabs.onUpdated.addListener((tabId, change, tab) => ready.then(() => {
-  if (tabId !== capturingTabId || !session.meetingUrl) return;
+  if (tabId !== capturingTabId || !session.meetingUrl || !inTab()) return;
   if (change.url === undefined && change.status !== "loading") return;
   if (meetingBase(tab.url) !== session.meetingUrl) endMeeting("Left the meeting page");
 }));
@@ -327,7 +374,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   ready.then(() => {
     switch (msg.type) {
       case "meeting-left":
-        if (sender.tab?.id === capturingTabId) endMeeting("Left the call");
+        if (sender.tab?.id === capturingTabId && inTab()) endMeeting("Left the call");
         return;
       case "end-meeting": return endMeeting("Ended manually");
       case "open-history": return chrome.tabs.create({ url: "report.html" });
@@ -349,11 +396,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "panel-ready":
         toPanel({ type: "session", ...snapshot() });
         if (lastProblem) return status(lastProblem.text, lastProblem.level);
-        return status(capturingTabId !== null ? "Listening to the conversation..." : "Idle. Click the extension icon on your interview's tab to start.");
+        return status(capturingTabId !== null ? "Listening to the conversation..." : "Idle. Click the extension icon (on your call's tab, if the call is in Chrome) to start.");
       case "capture-warning": return status(msg.text, "warn");
+      case "capture-started":
+        lastProblem = null;
+        return capturingTabId !== null && status(msg.text);
+      case "capture-ended":
+        if (capturingTabId === null) return;
+        return stopCapture({ quiet: true }).then(() => status(msg.text, "warn"));
       case "capture-error":
-        setCapturing(null);
-        return status(msg.text, "error");
+        return stopCapture({ quiet: true }).then(() => status(msg.text, "error"));
     }
   });
 });

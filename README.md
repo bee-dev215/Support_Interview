@@ -1,10 +1,10 @@
 # Support_Interview
 
-Chrome extension (Manifest V3) that listens to a Google Meet interview, detects the interviewer's questions, and streams CV-grounded answer notes into Chrome's side panel.
+Chrome extension (Manifest V3) that listens to an interview or any other call, detects the other side's questions, and streams CV-grounded answer notes into Chrome's side panel. It works with calls in a browser tab (Google Meet, Google Voice, Zoom, Teams, Webex, WhatsApp Web, any site), calls in desktop apps (Zoom, Teams, Skype, WhatsApp, softphones for a second number), and phone calls that play through the computer.
 
 ```
-Meet tab audio ─► offscreen doc ─► Deepgram (live STT) ─► background (question detection)
-                                                             └─► Claude (streaming, CV prompt-cached) ─► side panel
+call audio (tab / computer audio / input device) ─► offscreen doc or computer-audio window ─► Deepgram (live STT)
+   ─► background (question detection) ─► Claude (streaming, CV prompt-cached) ─► side panel
 ```
 
 ## Setup
@@ -18,7 +18,8 @@ Meet tab audio ─► offscreen doc ─► Deepgram (live STT) ─► background
 3. Open the extension's **Options** page:
    - Choose **OpenAI key** or **Anthropic key**, then enter that key (platform.openai.com or console.anthropic.com) and your **Deepgram API key** (console.deepgram.com). You can store both AI keys and switch providers at any time.
    - Pick the answer model. Opus 5.5 / GPT-6.1 Sol give the best quality; Haiku 5.5 / GPT-6 Luna are the fastest and cheapest.
-   - Click **Enable microphone** and allow it. Your voice is then transcribed as "Me". Use headphones so the mic doesn't pick up the interviewer.
+   - Under **Call audio & microphone**, choose where the other side's voice comes from (see [Call audio](#call-audio)): **Browser tab** (the default) for a call in Chrome, **Computer audio** for a desktop app or a phone call through the computer, or **Audio input device** for Stereo Mix, VB-Cable or a phone connected to the computer.
+   - Click **Grant access** under Microphone and allow it. Your voice is then transcribed as "Me". Use headphones so the mic doesn't pick up the interviewer.
    - Upload your CV (PDF/TXT/MD), then click **Analyze CV**. Review and edit the generated profile.
    - Right after **Analyze CV**, the extension researches your previous employers on its own (or click **Research employers** to re-run it after editing your profile). It searches the web for each company in your profile and writes a brief on each: history, industry, business model, main products or services, key achievements, lines you can say, and questions you may get. Answers use these briefs when the interviewer asks about a previous employer. It takes a few minutes, so keep the Options page open; read it before the interview and correct anything that's wrong.
    - Under **Next conversation**, choose **Company interview** and paste the company name (and website if you have it) with the job description, or choose **Free conversation** (see below). Everything saves automatically.
@@ -28,8 +29,8 @@ Meet tab audio ─► offscreen doc ─► Deepgram (live STT) ─► background
 
 ## Use
 
-1. Join the Google Meet call.
-2. Click the **Support_Interview** toolbar icon *on the Meet tab*. The side panel opens and listening starts.
+1. Join the call: Google Meet, Google Voice, Zoom, Teams or any other call (see [Call audio](#call-audio) for desktop apps and phone calls).
+2. Click the **Support_Interview** toolbar icon *on the call's tab* (with Computer audio or an input device, on any tab). The side panel opens and listening starts.
 3. Both sides of the conversation appear in the transcript, labeled **Interviewer** and **Me**. When the interviewer asks a question, an answer streams in at the top. It uses the whole conversation, so it stays consistent with what you've already said and builds on your earlier answers. Answers are written in natural American conversational English, in both modes. That means contractions, everyday phrases ("Here's the thing", "That makes sense", "What do you think?"), common phrasal verbs (figure out, set up, follow up) and American spelling and words. Stiff, textbook or non-native phrasing like "I would like to inform you" or "since three years" is avoided, so the lines feel comfortable to say. They're grammatically correct, in short paragraphs, and a colored **/** marks each place to pause. With the **reading guide** on (the default), they also use simple words and short sentences, and highlighted words are the ones to stress, so you can read them aloud smoothly even as an English beginner.
 4. **Conversation insights** update automatically every 8 utterances and again when you click Stop. You can also click **Analyze**. Each analysis includes a summary, the facts you've claimed, what the interviewer is focused on, weak answers with a recovery line for each, and questions to ask them.
 5. **Copy transcript** copies the full labeled conversation. **Discard session** clears it without saving. Starting on a different Meet tab or meeting also starts a new session.
@@ -67,6 +68,21 @@ Meet tab audio ─► offscreen doc ─► Deepgram (live STT) ─► background
 
     Change the global ones at `chrome://extensions/shortcuts` (Options has a button for it). Chrome skips a suggested shortcut that another extension already uses. In that case it shows as "Not set" until you assign one.
 11. The report page's **Download** button saves the feedback, live insights and timestamped transcript as one Markdown file.
+
+## Call audio
+
+Options → **Call audio & microphone** sets where the other side's voice comes from. Your own voice always comes from your microphone.
+
+| Choice | Use it for | How it starts |
+|---|---|---|
+| **Browser tab** (default) | Any call in Chrome: Google Meet, Google Voice (voice.google.com), Zoom, Teams or Webex on the web, WhatsApp Web, an AI interview site | Click the icon on the call's tab. Only that tab is heard. |
+| **Computer audio** | Desktop apps (Zoom, Teams, Skype, WhatsApp, Viber), a softphone for your second number, your mobile's calls through Windows **Phone Link** or a Bluetooth link to the computer | Click the icon on any tab. A small **Call audio** window opens: click **Share computer audio**, choose **Entire screen**, turn on **Also share system audio**, and click **Share**. Keep that window open (minimizing is fine). Closing it, or clicking Chrome's **Stop sharing**, pauses listening. |
+| **Audio input device** | Windows **Stereo Mix**, a virtual cable (VB-Cable, VoiceMeeter), or a phone or desk phone connected to the computer's line-in or as a Bluetooth headset | Pick the device under the choice, then click the icon on any tab. No window and no screen sharing. |
+
+Notes:
+- **A call on your mobile phone (a second number, a regular call, WhatsApp on the phone).** The extension can only hear what reaches the computer. On Windows, link the phone with **Phone Link** and take the call from the PC (Phone Link → Calls), or pair the phone with the computer over Bluetooth, then use **Computer audio**.
+- **Computer audio** hears everything the computer plays, including notifications and videos, so mute other sound during the call. Use headphones so your microphone doesn't pick up the call too. Chrome offers system audio only when you share an **Entire screen** (Windows and ChromeOS; on macOS it depends on the version). If no sound is shared, the window tells you; use an **Audio input device** instead (on a Mac, a virtual device such as BlackHole).
+- **Ending a call.** On Meet and Google Voice, hanging up ends the session and opens the feedback report. With a desktop app or a phone call, click **End & feedback** in the panel when the call is over.
 
 ## Free conversation mode
 

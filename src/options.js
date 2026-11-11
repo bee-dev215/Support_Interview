@@ -6,7 +6,7 @@ import { icon } from "./lib/icons.js";
 import { getShortcuts, keyCaps, openShortcutSettings } from "./lib/shortcuts.js";
 
 const $ = (id) => document.getElementById(id);
-const RADIOS = ["provider", "model", "openaiModel", "answerLength", "theme", "mode"];
+const RADIOS = ["provider", "model", "openaiModel", "answerLength", "theme", "mode", "callSource"];
 // Settings with a control on this page (the free conversation's internal game plan has none).
 const FIELDS = Object.keys(DEFAULTS).filter((k) => !RADIOS.includes(k) && $(k));
 
@@ -61,6 +61,10 @@ if (s.micDeviceId) {
   $("micDeviceId").add(new Option("Saved microphone", s.micDeviceId));
   $("micDeviceId").value = s.micDeviceId;
 }
+if (s.callDeviceId) {
+  $("callDeviceId").add(new Option("Saved device", s.callDeviceId));
+  $("callDeviceId").value = s.callDeviceId;
+}
 
 // Settings as the page uses them. A key field gives the key being typed, else the saved (decrypted) key.
 function readForm() {
@@ -99,6 +103,15 @@ function showMode() {
   updateChecks();
 }
 document.querySelectorAll("input[name=mode]").forEach((r) => r.addEventListener("change", showMode));
+
+/* ---------- Call audio: browser tab, computer audio or an audio input device ---------- */
+
+function showSource() {
+  const { callSource } = readForm();
+  document.querySelectorAll("[data-source]").forEach((el) => (el.hidden = el.dataset.source !== callSource));
+  updateChecks();
+}
+document.querySelectorAll("input[name=callSource]").forEach((r) => r.addEventListener("change", showSource));
 
 /* ---------- Autosave ---------- */
 
@@ -431,16 +444,20 @@ async function showMicState() {
   if (micGranted) listMics();
 }
 
-// Device names are only visible after access is granted. A saved mic that's unplugged stays listed.
+// Device names are only visible after access is granted. A saved device that's unplugged stays listed.
+// The same inputs fill both lists: your microphone, and the device a call plays through (Call audio).
 async function listMics() {
-  const select = $("micDeviceId");
-  const current = select.value;
   const mics = (await navigator.mediaDevices.enumerateDevices())
     .filter((d) => d.kind === "audioinput" && d.deviceId !== "default" && d.deviceId !== "communications");
-  const opts = [new Option("System default", ""), ...mics.map((d) => new Option(d.label || "Microphone", d.deviceId))];
-  if (current && !mics.some((d) => d.deviceId === current)) opts.push(new Option("Saved microphone (not connected)", current));
-  select.replaceChildren(...opts);
-  select.value = current;
+  const fill = (select, first, saved) => {
+    const current = select.value;
+    const opts = [new Option(first, ""), ...mics.map((d) => new Option(d.label || "Audio input", d.deviceId))];
+    if (current && !mics.some((d) => d.deviceId === current)) opts.push(new Option(`${saved} (not connected)`, current));
+    select.replaceChildren(...opts);
+    select.value = current;
+  };
+  fill($("micDeviceId"), "System default", "Saved microphone");
+  fill($("callDeviceId"), "Choose a device…", "Saved device");
 }
 navigator.mediaDevices.addEventListener("devicechange", () => { if (micGranted) listMics(); });
 $("enableMic").addEventListener("click", async () => {
@@ -665,7 +682,8 @@ function updateChecks() {
   const state = {
     ai: !!secret[aiField] && !bad.ai,
     deepgram: !!secret.deepgramKey && !bad.deepgram,
-    mic: !f.captureMic || micGranted,
+    // Listing or using an audio input device for the call needs the same permission as the microphone.
+    mic: (!f.captureMic && f.callSource !== "device") || micGranted,
     profile: !!f.profile,
     job: isFree(f.mode) ? !!f.freeTopic : !!f.jobDesc,
   };
@@ -682,6 +700,7 @@ function updateChecks() {
     : hasUnsaved() ? "Click the red button in step 1 to encrypt and save your keys."
     : weakKeys() ? "Click the red button in step 1 to protect your saved keys with a passphrase."
     : !required ? "Complete the API keys and microphone to start."
+    : f.callSource === "device" && !f.callDeviceId ? "Choose the device your call plays through in step 3."
     : isFree(f.mode) && !f.freeTopic ? "Ready, but write your topic in step 4 so replies steer toward your view."
     : !isFree(f.mode) && !state.profile ? "Ready, but add your CV for personalized answers."
     : "All set. Open your call and click the extension icon.";
@@ -708,5 +727,6 @@ window.addEventListener("focus", renderShortcuts); // pick up changes made on ch
 showMicState();
 renderShortcuts();
 showMode();
+showSource();
 verifyKey("deepgramKey");
 verifyKey(selectedKeyField());

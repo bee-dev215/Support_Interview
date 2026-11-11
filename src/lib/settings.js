@@ -8,6 +8,10 @@ export const DEFAULTS = {
   model: "claude-opus-5-5",
   openaiModel: "gpt-6.1-sol",
   language: "en",
+  // Where the other side's voice comes from: "tab" (a call in this browser tab), "system" (everything the computer
+  // plays: desktop apps, softphones, Phone Link) or "device" (an audio input device such as Stereo Mix or VB-Cable).
+  callSource: "tab",
+  callDeviceId: "", // the audio input device for callSource "device"
   captureMic: true,
   micDeviceId: "", // "" = the system default microphone
   autoAnswer: true,

@@ -150,10 +150,37 @@
         <div class="section-head">
           <span class="step">3</span>
           <div>
-            <h2>Microphone</h2>
-            <p class="muted">Transcribes your side as “Me”, so answers stay consistent with what you said and feedback covers both sides. Headphones give the cleanest result.</p>
+            <h2>Call audio &amp; microphone</h2>
+            <p class="muted">Where the other side's voice comes from, and your own microphone.</p>
           </div>
         </div>
+        <div class="provider-grid" role="radiogroup" aria-label="Call audio">
+          <label class="provider">
+            <input type="radio" name="callSource" value="tab">
+            <span class="name">Browser tab</span>
+            <span class="desc">A call in Chrome: Google Meet, Google Voice, Zoom, Teams or Webex on the web, WhatsApp Web, any site. Click the icon on the call's tab.</span>
+          </label>
+          <label class="provider">
+            <input type="radio" name="callSource" value="system">
+            <span class="name">Computer audio</span>
+            <span class="desc">Everything your computer plays: Zoom, Teams, Skype or WhatsApp apps, a softphone for your second number, mobile calls through Phone Link. Starting opens a small window where you share it.</span>
+          </label>
+          <label class="provider">
+            <input type="radio" name="callSource" value="device">
+            <span class="name">Audio input device</span>
+            <span class="desc">Stereo Mix, VB-Cable, or a phone connected to the computer by cable or Bluetooth. Pick the device below.</span>
+          </label>
+        </div>
+        <label class="field lang" data-source="device">
+          <span class="field-label">Device the call plays through</span>
+          <select id="callDeviceId" class="select">
+            <option value="">Choose a device…</option>
+          </select>
+          <span class="field-hint">Grant microphone access below to see the device names. Don't pick your own microphone here.</span>
+        </label>
+        <p class="field-hint" data-source="system">With Computer audio, use headphones: the call is heard from the computer, so your microphone doesn't need to pick it up from the speakers. A mobile phone call is heard once it plays through the computer (Windows Phone Link → Calls, or the phone paired to the computer over Bluetooth).</p>
+        <h3 class="field-label">Microphone</h3>
+        <p class="muted">Transcribes your side as “Me”, so answers stay consistent with what you said and feedback covers both sides. Headphones give the cleanest result.</p>
         <div class="row">
           <label class="switch">
             <input id="captureMic" type="checkbox"><span class="track"></span> Transcribe my microphone
@@ -167,7 +194,7 @@
           <select id="micDeviceId" class="select">
             <option value="">System default</option>
           </select>
-          <span class="field-hint">Pick the same microphone Google Meet uses (Meet: ⋮ → Settings → Audio). If your lines never appear as “Me”, this is usually why.</span>
+          <span class="field-hint">Pick the same microphone your call uses (Meet: ⋮ → Settings → Audio). If your lines never appear as “Me”, this is usually why.</span>
         </label>
       </section>
 

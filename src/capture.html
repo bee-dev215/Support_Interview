@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support_Interview · Call audio</title>
+  <script src="theme-init.js"></script>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); }
+    main { padding: 20px 22px; max-width: 460px; }
+    h1 { font-size: 17px; margin: 0 0 6px; }
+    p { margin: 0 0 12px; }
+    ol { margin: 0 0 16px; padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    #share { width: 100%; padding: 10px; font-size: 15px; }
+    #state { margin-top: 14px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
+    #state.ok { border-color: var(--success); background: var(--success-soft); color: var(--success); }
+    #state.err { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+    #state:empty { display: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Hear the call from your computer</h1>
+    <p class="muted">For calls outside this browser: Zoom, Teams, Skype or WhatsApp apps, a softphone for your second number, or your mobile's calls through Phone Link.</p>
+    <ol>
+      <li>Click <b>Share computer audio</b>.</li>
+      <li>In Chrome's window, open the <b>Entire screen</b> tab, pick your screen and turn on <b>Also share system audio</b>, then click <b>Share</b>.</li>
+      <li>Keep this window open. You can minimize it.</li>
+    </ol>
+    <button type="button" class="btn btn-primary" id="share">Share computer audio</button>
+    <div id="state" role="status" aria-live="polite"></div>
+  </main>
+  <script type="module" src="capture.js"></script>
+</body>
+</html>

@@ -1,7 +1,10 @@
-// Content script on Google Meet: tells the extension when you leave the call.
-// Meet's markup changes often, so this keys off the accessible "Leave call" button
-// (English UI); tab close / navigation are handled separately in the background.
-const LEAVE_SELECTOR = '[aria-label*="leave call" i], [data-tooltip*="leave call" i]';
+// Content script on Google Meet and Google Voice: tells the extension when you leave the call.
+// Their markup changes often, so this keys off the accessible hang-up button (English UI): "Leave call" on Meet,
+// "End call" on Google Voice. Tab close / navigation are handled separately in the background.
+const LEAVE_SELECTOR = [
+  '[aria-label*="leave call" i]', '[data-tooltip*="leave call" i]',
+  '[aria-label*="end call" i]', '[data-tooltip*="end call" i]', '[aria-label*="hang up" i]',
+].join(", ");
 const GONE_FOR_MS = 4000;
 
 let wasInCall = false;
