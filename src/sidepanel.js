@@ -249,11 +249,12 @@ function startCard({ id, question, manual, lead = false, kind = "answer" }, { re
       </div>
     </div>`;
   el.querySelector(".answer-q").textContent = question;
+  el.querySelector(".answer-head").title = question; // the question is hidden on an open card; hover shows it
   if (kind === "icebreaker" && !restoring) el.querySelector(".answer-text").innerHTML = `<p class="answer-note">Studying their face and checking the movie…</p>`;
   const card = { id, el, textEl: el.querySelector(".answer-text"), text: "", question, manual, lead, kind };
   el.querySelector(".answer-head").addEventListener("click", () => setOpen(card, el.classList.contains("collapsed")));
   el.querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => regenerate(card, b.dataset.style)));
-  el.querySelector('[data-act="copy"]').addEventListener("click", (e) => copyText(plainText(card.text), e.currentTarget));
+  el.querySelector('[data-act="copy"]').addEventListener("click", (e) => copyText(plainText(shownText(card)), e.currentTarget));
   el.querySelector('[data-act="stop"]').addEventListener("click", () => toBackground({ type: "stop-answer" }));
   el.querySelector('[data-act="delete"]').addEventListener("click", () => toBackground({ type: "delete-answer", id }));
 
@@ -301,7 +302,7 @@ function markBest(ids, best) {
     const c = cards.get(id);
     if (!c) continue;
     c.el.classList.toggle("best", id === best);
-    c.el.querySelector(".answer-head").title = id === best ? "Most appropriate of the answers to this question" : "";
+    c.el.querySelector(".answer-head").title = id === best ? `${c.question}\n(Most appropriate of the answers to this question)` : c.question;
   }
 }
 
@@ -316,11 +317,15 @@ function regenerate(card, style) {
   toBackground({ type: "regenerate", question: card.question, style: STYLES[key] ?? "", manual: card.manual, lead: card.lead, photo: card.kind === "icebreaker" });
 }
 
+// Only the lines to say are shown: the italic "Why: ..." note on a move is left out (also while it streams in).
+const WHY_NOTE = /^\s*\*?Why:.*$/gim;
+const shownText = (c) => (c.kind === "icebreaker" ? c.text : c.text.replace(WHY_NOTE, ""));
+
 function appendCard(id, text) {
   const c = cards.get(id);
   if (!c || !text) return;
   c.text += text;
-  c.textEl.innerHTML = renderMarkdown(c.text, { pauses: true });
+  c.textEl.innerHTML = renderMarkdown(shownText(c), { pauses: true });
 }
 
 function endCard(id, { error, stopped } = {}) {
@@ -806,7 +811,7 @@ document.addEventListener("keydown", (e) => {
     r: () => latest && regenerate(latest, ""),
     s: () => latest && regenerate(latest, "shorter"),
     d: () => latest && regenerate(latest, "deeper"),
-    c: () => latest && copyText(plainText(latest.text), latest.el.querySelector(".copy-btn")),
+    c: () => latest && copyText(plainText(shownText(latest)), latest.el.querySelector(".copy-btn")),
     x: () => latest && toBackground({ type: "delete-answer", id: latest.id }),
     Escape: () => toBackground({ type: "stop-answer" }),
     1: () => selectTab("answers"),

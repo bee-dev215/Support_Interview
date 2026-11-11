@@ -257,3 +257,12 @@ body.dropping::after {
 /* Answer: the main action when answers come on demand (Space) */
 #answerLast { padding: 7px 16px; font-size: 14px; font-weight: 650; }
 .kbd-on-primary { background: rgb(255 255 255 / 18%); border-color: rgb(255 255 255 / 35%); color: inherit; box-shadow: none; }
+
+/* Just the answer: an open card hides the question (it's in the transcript; hover the header to see it) and keeps
+   only a slim row with the badge. Collapsed cards still show it on one line, so you can tell them apart. */
+.answer:not(.collapsed) .answer-head { padding: 6px 12px 2px; }
+.answer:not(.collapsed) .answer-q { visibility: hidden; height: 0; }
+
+/* Rapport and interview direction are still read every few exchanges and steer every answer, but the panel
+   shows only the answers: the strips stay out of sight. */
+#rapport, #direction { display: none !important; }
