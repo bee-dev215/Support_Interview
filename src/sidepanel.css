@@ -44,7 +44,7 @@ body {
 
 /* Controls */
 .controls {
-  display: grid; grid-template-columns: auto 1fr; gap: 8px;
+  display: grid; grid-template-columns: auto auto; justify-content: start; gap: 8px;
   padding: 0 14px 12px; background: var(--surface);
 }
 .controls .btn { height: 34px; }
@@ -187,17 +187,6 @@ main { flex: 1; min-height: 0; position: relative; }
 /* Lead moves: said on your own initiative; the italic "Why:" line is a note to you, not to read aloud */
 .answer.lead.latest { border-color: var(--success); box-shadow: 0 0 0 1px var(--success), var(--shadow); }
 .answer.lead .answer-text em { font-size: .82em; color: var(--muted); }
-/* Photo icebreakers: lines prepared from the interviewer's photo; the italic lines are notes to you. Hidden while Photo is off. */
-body.hide-photo .answer.icebreaker { display: none; }
-.answer.icebreaker.latest { border-color: var(--me); box-shadow: 0 0 0 1px var(--me), var(--shadow); }
-.answer.icebreaker .answer-text em { font-size: .82em; color: var(--muted); }
-/* Dragging an image over the panel */
-body.dropping::after {
-  content: "Drop the interviewer's photo"; position: fixed; inset: 8px; z-index: 10;
-  display: grid; place-items: center; padding: 16px; text-align: center; pointer-events: none;
-  border: 2px dashed var(--accent); border-radius: var(--radius-lg); background: var(--surface);
-  font-weight: 650; color: var(--accent);
-}
 
 /* Rapport timeline */
 .timeline { padding: 12px 14px; margin-bottom: 12px; }

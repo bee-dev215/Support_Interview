@@ -1,5 +1,5 @@
 import { aiKey, getSettings, isFree, jobBriefFresh, providerName } from "./lib/settings.js";
-import { analyzeDirection, analyzeRapport, pickBestAnswer, streamAnalysis, streamAnswer, streamLead, streamLookalike, warmCache } from "./lib/claude.js";
+import { analyzeDirection, analyzeRapport, pickBestAnswer, streamAnalysis, streamAnswer, streamLead, warmCache } from "./lib/claude.js";
 import { classify } from "./lib/detect.js";
 import { addRecord } from "./lib/history.js";
 
@@ -14,7 +14,6 @@ const RAPPORT_EVERY = 3;     // re-read rapport after this many new utterances (
 const DIRECTION_EVERY = 4;   // re-read the interview's direction after this many new utterances
 const LEAD_PAUSE_MS = 7000;  // silence after you finish speaking before offering a way to take the lead
 const MAX_ANSWERS = 20;      // answer cards kept per session (the panel shows the same number)
-const PHOTO_LABEL = "From their photo: movie lookalike and kind things to say";
 
 let currentAnswer = null;
 let answerSeq = Date.now(); // seeded from the clock so ids stay unique across service-worker restarts
@@ -266,11 +265,10 @@ async function stopCapture({ quiet = false } = {}) {
   setCapturing(null);
   if (await chrome.offscreen.hasDocument()) await chrome.offscreen.closeDocument();
   if (captureWindowId !== null) chrome.windows.remove(captureWindowId).catch(() => {});
-  if (!quiet) status("Paused. Click Resume to continue, or End & get feedback when the call is over.");
+  if (!quiet) status("Paused. Click Resume to continue, or End when the call is over.");
 }
 
-// Meeting over: save it to history and open the feedback report in its own tab
-// (the interview's tab and its side panel may already be gone).
+// Call over (End button, or you left the call): stop listening and save it to History. No report opens.
 let ending = false;
 async function endMeeting(reason) {
   if (ending) return;
@@ -280,7 +278,10 @@ async function endMeeting(reason) {
     if (capturingTabId !== null) await stopCapture();
     // Let the offscreen document flush its last utterances.
     await new Promise((r) => setTimeout(r, 300));
-    if (session.transcript.length === 0) return status("Interview ended. Nothing was transcribed, so there is no feedback.", "warn");
+    if (session.transcript.length === 0) {
+      resetSession(null);
+      return status("Call ended. Nothing was transcribed, so nothing was saved.");
+    }
 
     const s = await getSettings();
     const id = `${Date.now()}`;
@@ -302,8 +303,7 @@ async function endMeeting(reason) {
       feedback: "",
     });
     resetSession(null);
-    await chrome.tabs.create({ url: `report.html?id=${id}` });
-    status("Interview ended. Your feedback report opened in a new tab.");
+    status("Call ended and saved to History.");
   } finally {
     ending = false;
   }
@@ -331,8 +331,7 @@ async function ensureOffscreen() {
 
 function emptySession(tabId) {
   // source: where the call's audio comes from (see SOURCES).
-  // photo: the latest uploaded face screenshot, kept for Regenerate; never saved to history.
-  return { tabId, source: null, meetingUrl: null, title: "", startedAt: null, transcript: [], insights: "", rapport: [], direction: null, answers: [], photo: null };
+  return { tabId, source: null, meetingUrl: null, title: "", startedAt: null, transcript: [], insights: "", rapport: [], direction: null, answers: [] };
 }
 
 const snapshot = () => ({
@@ -386,11 +385,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "open-history": return chrome.tabs.create({ url: "report.html" });
       case "utterance": return onUtterance(msg.speaker, msg.text);
       case "ask": return answer(msg.text, { force: true, manual: true });
-      case "answer-last": return answerLast();
+      case "answer-last": return answerLast({ nice: !!msg.nice });
       case "take-lead": return takeLead();
       case "answer-line": return answer(msg.text, { force: true });
-      case "photo": return photoIcebreaker(msg.image);
-      case "regenerate": return answer(msg.question, { force: true, style: msg.style, manual: msg.manual, lead: msg.lead, photo: msg.photo });
+      case "regenerate": return answer(msg.question, { force: true, style: msg.style, manual: msg.manual, lead: msg.lead, nice: msg.nice });
       case "speaking": return clearTimeout(leadTimer); // someone is talking: no lead into their speech
       case "stop-answer": return currentAnswer?.abort();
       case "delete-answer": return deleteAnswers([msg.id]);
@@ -446,20 +444,11 @@ function pauseLead() {
   answer("Pause: keep the conversation going", { auto: true, lead: true });
 }
 
-// Photo button / paste / drop in the panel: a movie-lookalike icebreaker from a screenshot of the interviewer.
-function photoIcebreaker(image) {
-  session.photo = { ...image, id: Date.now() };
-  save();
-  return answer(PHOTO_LABEL, { force: true, manual: true, photo: true });
-}
-
-// Trash on a card / Clear in the panel: drop those cards, stopping one still streaming. The uploaded photo
-// goes too once no card made from it is left, so a deleted photo isn't kept for Regenerate.
+// Trash on a card / Clear in the panel: drop those cards, stopping one still streaming.
 function deleteAnswers(ids) {
   const gone = new Set(ids);
   if ((session.answers ?? []).some((a) => gone.has(a.id) && !a.done)) currentAnswer?.abort();
   session.answers = (session.answers ?? []).filter((a) => !gone.has(a.id));
-  if (session.photo && !session.answers.some((a) => a.photoId === session.photo.id)) session.photo = null;
   save();
   toPanel({ type: "answers-removed", ids });
 }
@@ -468,7 +457,8 @@ function deleteAnswers(ids) {
 // arrives as several transcript lines ("So tell me about your last project." "What was the hardest part?"), so
 // they are answered together. If you've already started replying, it answers their lines before that.
 const FLUSH_WAIT_MS = 450; // time for Deepgram to finalize speech still in progress
-async function answerLast() {
+// nice: the N key, the same answer with one compliment for the interviewer woven in.
+async function answerLast({ nice = false } = {}) {
   // Turn speech still being transcribed into transcript lines first, so a question just finished is included.
   toOffscreen({ type: "flush" });
   await new Promise((r) => setTimeout(r, FLUSH_WAIT_MS));
@@ -477,8 +467,10 @@ async function answerLast() {
   while (end > 0 && lines[end - 1].speaker !== "interviewer") end--;
   let start = end;
   while (start > 0 && lines[start - 1].speaker === "interviewer") start--;
+  // Nothing from them yet (the call's opening): a friendly opener of your own, compliment included.
+  if (end === 0 && nice) return answer("Your move: a friendly opener", { force: true, manual: true, lead: true, nice });
   if (end === 0) return status("Nothing from the other side yet. Type the question in the box below instead.", "warn");
-  return answer(lines.slice(start, end).map((u) => u.text).join(" "), { force: true });
+  return answer(lines.slice(start, end).map((u) => u.text).join(" "), { force: true, nice });
 }
 
 const missingKey = (s) => s.keysLocked
@@ -544,23 +536,22 @@ function isEcho(text) {
 
 const normalize = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, "").split(/\s+/).filter(Boolean);
 
-// lead: a move the candidate makes on their own initiative; photo: an icebreaker from session.photo.
-// For both, question is just the card's label.
-async function answer(question, { force = false, style = "", manual = false, auto = false, lead = false, photo = false } = {}) {
-  const s = await getSettings();
+// lead: a move the candidate makes on their own initiative; question is then just the card's label.
+async function answer(question, { force = false, style = "", manual = false, auto = false, lead = false, nice = false } = {}) {
+  const saved = await getSettings();
+  const s = nice ? { ...saved, nice: true, niceNow: true } : saved;
   // Auto-answer off = answer only on demand: nothing appears on its own, "Your move" cards included.
   if (auto && !(s.autoAnswer && (!lead || s.proactive))) return;
   if (!aiKey(s)) return status(missingKey(s), "error");
-  if (photo && !session.photo) return status("That photo is gone with the old session. Upload it again.", "warn");
 
   currentAnswer?.abort(); // newest question wins
   const id = ++answerSeq;
   let buffered = "";
-  const plain = lead ? "lead" : photo ? "icebreaker" : "answer"; // kind of a reply that carries no tag
-  // "answer" | "smalltalk" | "lead" | "none", decided from the reply's first characters; icebreakers carry no tags.
-  let kind = photo ? plain : null;
+  const plain = lead ? "lead" : "answer"; // kind of a reply that carries no tag
+  // "answer" | "smalltalk" | "lead" | "none", decided from the reply's first characters.
+  let kind = null;
   // Kept in the session so a reopened panel shows the same cards.
-  const card = { id, question, manual, lead, kind: plain, text: "", done: false, t: Date.now(), ...(photo && { photoId: session.photo.id }) };
+  const card = { id, question, manual, lead, kind: plain, text: "", done: false, t: Date.now(), nice };
   let shown = false;
   const show = (k) => {
     shown = true;
@@ -568,7 +559,7 @@ async function answer(question, { force = false, style = "", manual = false, aut
     (session.answers ??= []).push(card);
     if (session.answers.length > MAX_ANSWERS) session.answers.shift();
     save();
-    toPanel({ type: "answer-start", id, question, manual, lead, kind: k });
+    toPanel({ type: "answer-start", id, question, manual, lead, nice, kind: k });
   };
   const emit = (text) => {
     if (!text) return;
@@ -586,10 +577,7 @@ async function answer(question, { force = false, style = "", manual = false, aut
   try {
     const rapport = session.rapport?.at(-1);
     const direction = session.direction;
-    // Earlier suggestions for the same photo, so Regenerate offers a different movie.
-    const avoid = () => session.answers.filter((a) => a.photoId === card.photoId && a.text && !a.error).map((a) => a.text);
-    const stream = photo ? streamLookalike(s, session.transcript, session.photo, { style, avoid: avoid() })
-      : lead ? streamLead(s, session.transcript, { force, style, rapport, direction })
+    const stream = lead ? streamLead(s, session.transcript, { force, style, rapport, direction })
       : streamAnswer(s, session.transcript, question, style, rapport, direction);
     currentAnswer = stream;
     stream.on("text", (delta) => {
@@ -617,7 +605,7 @@ async function answer(question, { force = false, style = "", manual = false, aut
     const final = await stream.finalMessage();
     if (!shown) return;
     finish(final.stop_reason === "refusal" ? { error: "Model declined to answer." } : {});
-    if (!lead && !photo && isReply(card)) pickBest(question);
+    if (!lead && isReply(card)) pickBest(question);
   } catch (e) {
     // Aborted by Stop, by a newer question, or by ending/discarding the session.
     const aborted = e?.name === "APIUserAbortError" || id !== answerSeq;

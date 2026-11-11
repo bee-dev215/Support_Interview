@@ -95,7 +95,7 @@ function renderList() {
     $("list").innerHTML = list.length
       ? `<div class="empty-list"><div class="empty-title">No matches</div>Try a different search.</div>`
       : `<div class="empty-list card"><div class="empty-title">No interviews yet</div>
-          They appear here after you click <b>End &amp; get feedback</b> or leave a call.</div>`;
+          They appear here after you click <b>End</b> or leave a call.</div>`;
     return;
   }
   $("list").replaceChildren(...items.map((r) => {
@@ -153,8 +153,9 @@ async function showReport() {
   $("insights").innerHTML = record.insights ? renderMarkdown(record.insights) : `<p class="muted">No live insights were captured.</p>`;
   renderTranscript();
 
+  // Feedback is written only when asked for (Regenerate): ending a call just saves it.
   if (record.feedback) renderFeedback(record.feedback);
-  else generate();
+  else $("feedback").innerHTML = `<p class="muted">No feedback for this call. Click <b>Regenerate</b> if you want one.</p>`;
 }
 
 function renderRapport(readings) {

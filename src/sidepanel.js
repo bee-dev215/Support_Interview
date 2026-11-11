@@ -6,7 +6,6 @@ import { getShortcuts, keyCaps, openShortcutSettings } from "./lib/shortcuts.js"
 const $ = (id) => document.getElementById(id);
 const MAX_CARDS = 20;
 const FONT_MIN = 13, FONT_MAX = 22;
-const PHOTO_MAX = 1024; // longest side of the photo sent to the model, in pixels
 const STYLES = {
   shorter: "Make it shorter: 2-3 connected sentences, still one flowing spoken answer.",
   deeper: "Go deeper technically: include specifics, trade-offs, and an example.",
@@ -134,7 +133,7 @@ function updateEmpty() {
   $("answerLast").hidden = !capturing && !paused;
   $("takeLead").hidden = !capturing && !paused;
   $("answerLast").disabled = !transcript.some((u) => u.speaker === "interviewer");
-  $("clearAnswers").hidden = cards.size === 0; // hidden photo cards count: Clear removes them too
+  $("clearAnswers").hidden = cards.size === 0;
   $("transcriptEmpty").hidden = transcript.length > 0 || Object.values(live).some(Boolean);
   setCount("transcriptCount", transcript.length);
   setCount("answersCount", answered);
@@ -220,17 +219,15 @@ $("jump").addEventListener("click", () => scrollTranscript(true));
 
 /* ---------- Answers ---------- */
 
-function startCard({ id, question, manual, lead = false, kind = "answer" }, { restoring = false } = {}) {
+function startCard({ id, question, manual, lead = false, nice = false, kind = "answer" }, { restoring = false } = {}) {
   // A lead offered in a pause leaves the previous card open: you may still be reading it out.
   const keepOpen = lead && !manual && !restoring;
-  // Photo off: its card is made but hidden, and leaves the cards you can see as they are.
-  const hidden = kind === "icebreaker" && !showPhoto();
-  if (!hidden) for (const c of cards.values()) {
+  for (const c of cards.values()) {
     c.el.classList.remove("latest");
     if (!keepOpen) setOpen(c, false);
   }
   const el = document.createElement("article");
-  el.className = `card answer streaming${hidden ? "" : " latest"}`;
+  el.className = "card answer streaming latest";
   el.innerHTML = `
     <button class="answer-head" type="button" aria-expanded="true">
       <span class="badge kind-badge"></span>
@@ -250,8 +247,7 @@ function startCard({ id, question, manual, lead = false, kind = "answer" }, { re
     </div>`;
   el.querySelector(".answer-q").textContent = question;
   el.querySelector(".answer-head").title = question; // the question is hidden on an open card; hover shows it
-  if (kind === "icebreaker" && !restoring) el.querySelector(".answer-text").innerHTML = `<p class="answer-note">Studying their face and checking the movie…</p>`;
-  const card = { id, el, textEl: el.querySelector(".answer-text"), text: "", question, manual, lead, kind };
+  const card = { id, el, textEl: el.querySelector(".answer-text"), text: "", question, manual, lead, nice, kind };
   el.querySelector(".answer-head").addEventListener("click", () => setOpen(card, el.classList.contains("collapsed")));
   el.querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => regenerate(card, b.dataset.style)));
   el.querySelector('[data-act="copy"]').addEventListener("click", (e) => copyText(plainText(shownText(card)), e.currentTarget));
@@ -266,7 +262,7 @@ function startCard({ id, question, manual, lead = false, kind = "answer" }, { re
     oldest.el.remove();
     cards.delete(oldest.id);
   }
-  if (!restoring && !hidden) {
+  if (!restoring) {
     $("pane-answers").scrollTop = 0;
     if (activeTab !== "answers") selectTab("answers");
   }
@@ -312,14 +308,14 @@ function setOpen(card, open) {
 }
 
 function regenerate(card, style) {
-  if (style === "deeper" && (card.kind === "smalltalk" || card.kind === "icebreaker")) return;
+  if (style === "deeper" && card.kind === "smalltalk") return;
   const key = style === "deeper" && isFree(mode) ? "deeperFree" : style;
-  toBackground({ type: "regenerate", question: card.question, style: STYLES[key] ?? "", manual: card.manual, lead: card.lead, photo: card.kind === "icebreaker" });
+  toBackground({ type: "regenerate", question: card.question, style: STYLES[key] ?? "", manual: card.manual, lead: card.lead, nice: card.nice });
 }
 
 // Only the lines to say are shown: the italic "Why: ..." note on a move is left out (also while it streams in).
 const WHY_NOTE = /^\s*\*?Why:.*$/gim;
-const shownText = (c) => (c.kind === "icebreaker" ? c.text : c.text.replace(WHY_NOTE, ""));
+const shownText = (c) => c.text.replace(WHY_NOTE, "");
 
 function appendCard(id, text) {
   const c = cards.get(id);
@@ -334,7 +330,6 @@ function endCard(id, { error, stopped } = {}) {
   c.el.classList.remove("streaming");
   c.textEl.classList.remove("streaming-caret");
   if (stopped && !c.text) c.textEl.innerHTML = `<p class="answer-note">Stopped before any text arrived.</p>`;
-  else if (!c.text) c.textEl.replaceChildren(); // drop the icebreaker's "Looking at the photo" note
   if (error) {
     const n = document.createElement("div");
     n.className = "notice notice-error answer-error";
@@ -365,14 +360,12 @@ function setCardKind(id, kind, manual = cards.get(id)?.manual) {
   c.kind = kind;
   const small = kind === "smalltalk";
   const lead = kind === "lead";
-  const ice = kind === "icebreaker";
   c.el.classList.toggle("smalltalk", small);
   c.el.classList.toggle("lead", lead);
-  c.el.classList.toggle("icebreaker", ice);
   const badge = c.el.querySelector(".kind-badge");
-  badge.className = `badge kind-badge ${small || ice ? "badge-me" : lead ? "badge-success" : manual ? "" : "badge-accent"}`;
-  badge.textContent = small ? "Small talk" : lead ? "Your move" : ice ? "Icebreaker" : manual ? "You asked" : isFree(mode) ? "Them" : "Interviewer";
-  c.el.querySelector(".deeper").hidden = small || ice;
+  badge.className = `badge kind-badge ${small ? "badge-me" : lead ? "badge-success" : manual ? "" : "badge-accent"}`;
+  badge.textContent = small ? "Small talk" : lead ? "Your move" : manual ? "You asked" : isFree(mode) ? "Them" : "Interviewer";
+  c.el.querySelector(".deeper").hidden = small;
 }
 
 /* ---------- Rapport ---------- */
@@ -645,94 +638,8 @@ if (floating) {
   window.addEventListener("blur", endDrag);
 }
 
-/* ---------- Photo icebreaker ---------- */
-
-const showPhoto = () => $("showPhoto").checked;
-// Cards on screen, oldest first: photo cards drop out while Photo is off.
-const visibleCards = () => [...cards.values()].filter((c) => showPhoto() || c.kind !== "icebreaker");
-
-// Photo on: show the prepared lines, opening the newest (when switched on, not at load); off: hide them all.
-function applyPhoto(switched = false) {
-  document.body.classList.toggle("hide-photo", !showPhoto());
-  if (switched) {
-    // The highlight goes to the newest photo card when shown, else back to the newest card on screen.
-    const top = showPhoto() ? [...cards.values()].findLast((c) => c.kind === "icebreaker") : visibleCards().at(-1);
-    for (const c of cards.values()) c.el.classList.toggle("latest", c === top);
-    if (top && showPhoto()) {
-      setOpen(top, true);
-      if (activeTab !== "answers") selectTab("answers");
-      top.el.scrollIntoView({ block: "nearest" });
-    }
-  }
-  updateEmpty();
-}
-
-// A screenshot of the interviewer's face -> a friendly "you look like <character> from <movie>" line.
-// Downscaled to a JPEG first: a smaller upload, in a format every model accepts.
-async function sendPhoto(file) {
-  if (!file?.type.startsWith("image/")) return showNotice("That isn't an image. Use a PNG or JPG screenshot.", "warn");
-  try {
-    toBackground({ type: "photo", image: await shrinkImage(file) });
-    if (!showPhoto()) showNotice("Studying their photo. Turn on Photo to see the lines about them.", "info");
-  } catch {
-    showNotice("Couldn't read that image. Try another screenshot.", "warn");
-  }
-}
-
-async function shrinkImage(file) {
-  const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, PHOTO_MAX / Math.max(bmp.width, bmp.height));
-  const canvas = new OffscreenCanvas(Math.round(bmp.width * scale), Math.round(bmp.height * scale));
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#fff"; // transparent PNGs would turn black in a JPEG
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  bmp.close();
-  const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.85 });
-  const url = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(blob);
-  });
-  return { mediaType: "image/jpeg", data: url.split(",")[1] };
-}
-
-const imageFile = (list) => [...(list ?? [])].find((f) => f.type.startsWith("image/"));
-$("photo").addEventListener("click", () => $("photoFile").click());
-$("photoFile").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  e.target.value = ""; // so picking the same file again still fires change
-  if (file) sendPhoto(file);
-});
-// Ctrl+V a screenshot anywhere in the panel; pasting text into the box works as before.
-document.addEventListener("paste", (e) => {
-  const file = imageFile(e.clipboardData?.files);
-  if (!file) return;
-  e.preventDefault();
-  sendPhoto(file);
-});
-// Drop an image file on the panel. dragleave also fires when crossing child elements, so count enters and leaves.
-let dragDepth = 0;
-const dragsFiles = (e) => e.dataTransfer?.types.includes("Files");
-document.addEventListener("dragenter", (e) => {
-  if (!dragsFiles(e)) return;
-  dragDepth++;
-  document.body.classList.add("dropping");
-});
-document.addEventListener("dragleave", (e) => {
-  if (dragsFiles(e) && --dragDepth <= 0) document.body.classList.remove("dropping");
-});
-document.addEventListener("dragover", (e) => {
-  if (dragsFiles(e)) e.preventDefault();
-});
-document.addEventListener("drop", (e) => {
-  if (!dragsFiles(e)) return;
-  e.preventDefault();
-  dragDepth = 0;
-  document.body.classList.remove("dropping");
-  sendPhoto(imageFile(e.dataTransfer.files));
-});
+// Cards on screen, oldest first.
+const visibleCards = () => [...cards.values()];
 
 /* ---------- Controls ---------- */
 
@@ -753,19 +660,17 @@ $("end").addEventListener("click", () => toBackground({ type: "end-meeting" }));
 $("history").addEventListener("click", () => toBackground({ type: "open-history" }));
 $("options").addEventListener("click", () => chrome.runtime.openOptionsPage());
 
-// Auto-answer, Proactive and Nice live in storage, shared with the Options page and read by the background each time.
-// Photo only changes what this panel shows (shared with the floating window).
-const SWITCHES = { auto: "autoAnswer", proactive: "proactive", nice: "nice", showPhoto: "showPhoto" }; // element id -> setting
+// Auto-answer and Proactive live in storage, shared with the Options page and read by the background each time.
+// Nice is only in Options: in the panel, N asks for a compliment when you want one.
+const SWITCHES = { auto: "autoAnswer", proactive: "proactive" }; // element id -> setting
 chrome.storage.local.get(Object.values(SWITCHES)).then((stored) => {
   for (const [id, key] of Object.entries(SWITCHES)) $(id).checked = stored[key] ?? DEFAULTS[key];
-  applyPhoto();
   updateEmpty();
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   for (const [id, key] of Object.entries(SWITCHES)) if (changes[key]) $(id).checked = changes[key].newValue;
   if (changes.autoAnswer) updateEmpty();
-  if (changes.showPhoto) applyPhoto(true);
 });
 for (const [id, key] of Object.entries(SWITCHES)) {
   $(id).addEventListener("change", (e) => chrome.storage.local.set({ [key]: e.target.checked }));
@@ -788,7 +693,7 @@ function twoStep(btn, prompt, action) {
   });
 }
 twoStep($("discard"), "Click again to discard", () => toBackground({ type: "new-session" }));
-// Every answer card, photo ones included, and the uploaded photo; the transcript and insights stay.
+// Every answer card; the transcript and insights stay.
 twoStep($("clearAnswers"), "Click again to clear", () => toBackground({ type: "clear-answers" }));
 
 // Single-key shortcuts while the panel has focus (not while typing or with the shortcuts sheet open).
@@ -806,8 +711,8 @@ document.addEventListener("keydown", (e) => {
       if (!e.repeat) toBackground({ type: "answer-last" }); // held down: answer once
     },
     a: () => toBackground({ type: "answer-last" }),
+    n: () => !e.repeat && toBackground({ type: "answer-last", nice: true }), // same answer, with a compliment for them
     l: () => toBackground({ type: "take-lead" }),
-    p: () => $("photoFile").click(),
     r: () => latest && regenerate(latest, ""),
     s: () => latest && regenerate(latest, "shorter"),
     d: () => latest && regenerate(latest, "deeper"),

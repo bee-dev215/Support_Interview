@@ -541,7 +541,7 @@ ${PERSONAL_LIFE}`;
 // Always on for anything the candidate says aloud: correct grammar, short paragraphs and " / " pause marks.
 const READING_FORMAT = `
 
-Reading format (applies to every line the candidate will say out loud, including SMALLTALK and LEAD replies; keep the SMALLTALK:, LEAD:, NO_QUESTION and NO_LEAD tags exactly as they are; never put pause marks in the italic *Why: ...* or *Noticed: ...* notes):
+Reading format (applies to every line the candidate will say out loud, including SMALLTALK and LEAD replies; keep the SMALLTALK:, LEAD:, NO_QUESTION and NO_LEAD tags exactly as they are; never put pause marks in the italic *Why: ...* notes):
 The candidate reads your reply aloud during the call, so lay it out to be read smoothly at first glance.
 - Grammar: every sentence is complete and grammatically correct. Use a subject and a verb, the right article ("a", "an", "the"), subject-verb agreement ("she works", "the team was"), a consistent tense (past for what happened, present for how things work), correct plurals and prepositions ("good at", "worked on", "in 2021"), and proper punctuation. Contractions and a spoken tone are fine; grammar mistakes are not. Re-read each sentence and fix it before moving on.
 - Paragraphs: break the reply into short paragraphs of 2-3 sentences, one idea each, with a blank line between them. A reply of one or two sentences stays a single paragraph.
@@ -556,7 +556,7 @@ The slowest part / was the product images. So we moved them to a CDN / and loade
 // Always on: lines to say out loud sound like a native American speaker, natural and comfortable to say.
 const AMERICAN_STYLE = `
 
-American conversational style (applies to every line the candidate will say out loud, including SMALLTALK and LEAD replies, whenever the conversation is in English; never to the italic *Why: ...* or *Noticed: ...* notes):
+American conversational style (applies to every line the candidate will say out loud, including SMALLTALK and LEAD replies, whenever the conversation is in English; never to the italic *Why: ...* notes):
 Write it the way a friendly, confident, educated American talks in a relaxed work conversation, so it feels natural and comfortable to say, not translated or memorized.
 - American English: American spelling (color, organize, center, program, analyze) and words (résumé when speaking instead of CV, vacation, apartment, cell phone, fall, on the team, on the weekend, "I already sent it", "I just finished").
 - Everyday American moves, used where they fit and varied across the conversation:
@@ -601,31 +601,9 @@ How to use them:
 - Vary them across the conversation; never repeat a compliment the candidate already said.
 - Keep it warm, light and respectful, the way you'd compliment a new colleague. Never flirty, never about the body, never over the top. If the interviewer is strictly formal or time-boxed, prefer the softer ones (clear explanations, friendly energy, thanks) over looks.`;
 
-// Photo icebreaker: the candidate took a screenshot of the interviewer's face during the call.
-const LOOKALIKE_TASK = `TASK: The attached image is a screenshot of the interviewer's face, taken by the candidate during this call. Study the face and everything visible around it, then prepare kind, light lines the candidate can say about the interviewer. The main one: ask whether the interviewer has seen a well-known movie, then tell them they look a bit like a character from it.
-
-Study first:
-- Visible, neutral features: hairstyle and hair color, glasses, beard, smile, eyes, expression, clothing and style, overall vibe.
-- The background, if visible: a bookshelf, plants, art, a guitar, a city view, a tidy home office.
-
-How to pick the movie:
-- Choose a well-known movie (or a hugely popular series, if it fits much better) and a character the interviewer genuinely resembles, played by an actor who shares those features. Prefer hits most people have heard of.
-- The character must be likable or admired: a hero, a charming lead, a smart or cool supporting role. Never a villain, a joke character, or someone known for looking odd, old or unattractive.
-- Use web search to confirm the exact movie title, its year, the character's name and the actor, so nothing is misspelled or made up.
-- Don't try to recognize or name the person in the photo; only compare them to a fictional character.
-
-How it should sound:
-- Kind, friendly and a little playful, like a sincere compliment to a new colleague. Never sarcastic, never flirty.
-- Never mention ethnicity, skin color, weight, body or age.
-- The language the interview is held in. Short and spoken, easy to say out loud.
-
-Format (nothing before the first line, not even notes about your search):
-- 1-2 short sentences to say, in this shape: "Have you seen <Movie title>? You look a bit like <Character name> from that movie." You may add a few words that explain the compliment ("... the same friendly smile") or soften it ("... in a good way!").
-- Then, after a blank line, one line in italics for the candidate only: *Why: <Movie> (<year>), <character> played by <actor> · <the resemblance in a few words>*
-- Then, after a blank line, the line **More to say** and 2-3 bullets, each one short sentence ready to say: a sincere compliment on something visible (glasses, smile, style, a calm or cheerful expression), or a friendly small-talk opener about something in the background ("Is that a guitar behind you? Do you play?"). Each about a different thing; skip any that would feel forced.
-- Then, after a blank line, one line in italics for the candidate only: *Noticed: <the visible features and background you based this on, a few words each>*
-
-If no face is clearly visible in the image, reply with exactly: NO_FACE`;
+// N key in the panel: this one reply must carry a compliment, whatever the moment.
+const NICE_NOW = `
+For this reply the candidate pressed "Nice": include exactly one sincere compliment for the interviewer, even mid-way through a technical answer and even if the last reply had one. Pick the one that fits this moment best (their question, how they explain things, their energy, their voice, their look or background) and put it where it sounds most natural, usually first or last. It must differ from every compliment the candidate already said. The answer itself stays complete.`;
 
 const RAPPORT_TASK = `TASK: Read the whole conversation and assess the rapport between the interviewer and the candidate right now, including how it has developed over time.
 Consider: warmth and friendliness, humor and laughter cues ("haha", jokes, playful remarks), personal sharing, how long and engaged the interviewer's replies are, interruptions or curt replies, formality, and whether the candidate matched the interviewer's tone.
@@ -874,7 +852,7 @@ export function streamAnswer(settings, transcript, question, style, rapport, dir
   const extra = style ? `\n\nAdjustment requested: ${style}` : "";
   const length = LENGTHS[settings.answerLength] ?? LENGTHS.standard;
   const base = free(settings) ? freeAnswerTask(length, settings.proactive) : answerTask(length, settings.proactive);
-  const task = base + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "") + (settings.nice ? NICE : "");
+  const task = base + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "") + (settings.nice ? NICE + (settings.niceNow ? NICE_NOW : "") : "");
   return streamTask(settings, transcript, task + context(settings, rapport, direction) + focus + extra, length.effort, 3000);
 }
 
@@ -882,62 +860,8 @@ export function streamAnswer(settings, transcript, question, style, rapport, dir
 export function streamLead(settings, transcript, { force, style, rapport, direction }) {
   const extra = style ? `\n\nAdjustment requested: ${style}` : "";
   const base = free(settings) ? FREE_LEAD_TASK(force) : LEAD_TASK(force);
-  const task = base + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "") + (settings.nice ? NICE : "");
+  const task = base + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "") + (settings.nice ? NICE + (settings.niceNow ? NICE_NOW : "") : "");
   return streamTask(settings, transcript, task + context(settings, rapport, direction) + extra, "low", 800);
-}
-
-// Movie-lookalike icebreaker from a photo of the interviewer ({ mediaType, data } in base64).
-// avoid: earlier suggestions for the same photo. The model may search before it writes, so the reply arrives in
-// one piece when done (text written before a search is dropped), behind the same surface as a stream.
-export function streamLookalike(settings, transcript, image, { style = "", avoid = [] } = {}) {
-  const task = LOOKALIKE_TASK + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "")
-    + (avoid.length ? `\n\nAlready suggested for this photo; pick a different movie and character:\n${avoid.map((a) => `- ${a.replace(/\s+/g, " ")}`).join("\n")}` : "")
-    + (style ? `\n\nAdjustment requested: ${style}` : "");
-  let inner;
-  if (isOpenAI(settings)) {
-    const req = openaiRequest(settings, transcript, task, "medium", 3000);
-    const [conversation, taskText] = req.input[0].content;
-    const photo = { type: "input_image", image_url: `data:${image.mediaType};base64,${image.data}` };
-    inner = openai.stream(settings.openaiKey, { ...req, tools: [{ type: "web_search" }], input: [{ role: "user", content: [conversation, photo, taskText] }] });
-  } else {
-    const type = settings.model === "claude-haiku-5-5" ? "web_search_20250305" : "web_search_20260209";
-    const photo = { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } };
-    inner = makeClient(settings.anthropicKey).beta.messages.stream({
-      model: settings.model,
-      max_tokens: 3000,
-      output_config: { effort: "medium" },
-      ...fallbackParams(settings.model),
-      tools: [{ type, name: "web_search", max_uses: 3 }],
-      system: systemBlocks(settings),
-      messages: [{ role: "user", content: [...conversationBlocks(transcript, settings.mode), photo, { type: "text", text: task }] }],
-    });
-  }
-
-  const listeners = [];
-  const final = inner.finalMessage().then((msg) => {
-    if (msg.stop_reason === "refusal") return msg;
-    const text = isOpenAI(settings) ? msg.text.trim() : textAfterSearch(msg.content);
-    if (text.startsWith("NO_FACE")) throw new Error("No face found in that image. Crop the screenshot closer to the face and try again.");
-    if (!text) throw new Error("No suggestion came back. Try again.");
-    listeners.forEach((fn) => fn(text));
-    return msg;
-  });
-  final.catch(() => {}); // aborted streams are often never awaited
-
-  return {
-    on(event, fn) {
-      if (event === "text") listeners.push(fn);
-      return this;
-    },
-    finalMessage: () => final,
-    abort: () => inner.abort(),
-  };
-}
-
-// The reply proper: text after the last search result. Cited text arrives split into many blocks, so join without separators.
-function textAfterSearch(content) {
-  const last = content.findLastIndex((b) => b.type === "web_search_tool_result");
-  return content.slice(last + 1).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
 }
 
 export async function analyzeRapport(settings, transcript) {

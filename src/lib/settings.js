@@ -19,7 +19,6 @@ export const DEFAULTS = {
   answerLength: "standard",
   readingGuide: true,
   nice: false, // weave friendly compliments to the interviewer into replies
-  showPhoto: true, // show the lines prepared from an uploaded photo of the interviewer
   theme: "system",
   profile: "",
   employers: "", // researched briefs on each previous employer (Markdown)
