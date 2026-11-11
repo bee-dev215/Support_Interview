@@ -1,0 +1,199 @@
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.small { font-size: 12px; }
+h1, h2 { margin: 0; letter-spacing: -.01em; }
+h1 { font-size: 18px; }
+h2 { font-size: 15.5px; }
+p { margin: 2px 0 0; }
+
+/* Header */
+.page-head {
+  position: sticky; top: 0; z-index: 5;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { border-radius: 8px; }
+.brand p { font-size: 12.5px; }
+.head-actions { display: flex; align-items: center; gap: 12px; }
+.head-actions a.btn { text-decoration: none; }
+.save-state { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.save-state.ok { color: var(--success); }
+
+/* Layout */
+.layout {
+  display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start;
+  padding-top: 24px; padding-bottom: 64px;
+}
+.sections { display: flex; flex-direction: column; gap: 16px; }
+
+/* Checklist */
+.checklist { position: sticky; top: 88px; padding: 18px; }
+.checklist h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 12px; }
+.checklist ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.checklist li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); }
+.ck {
+  display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border-strong); flex: none;
+}
+.checklist li.ok { color: var(--text); }
+.checklist li.ok .ck { background: var(--success); border-color: var(--success); }
+.checklist li.ok .ck::after {
+  content: ""; width: 4px; height: 8px; margin-top: -2px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.checklist li.optional .ck { border-style: dashed; }
+.checklist li.bad { color: var(--danger); }
+.checklist li.bad .ck { background: var(--danger); border-color: var(--danger); }
+.checklist li.bad .ck::after { content: "!"; color: #fff; font: 700 11px/1 var(--font); }
+
+/* Sections */
+.section { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 18px; }
+.section-head { display: flex; gap: 14px; align-items: flex-start; }
+.section-head p { font-size: 13px; max-width: 640px; }
+.section-head .grow { flex: 1; min-width: 0; }
+.section-head > .btn { flex: none; }
+.step svg.i { width: 15px; height: 15px; }
+.step {
+  display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 8px;
+  background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px;
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.lang { max-width: 320px; }
+.field-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+/* Model cards */
+.model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.model {
+  position: relative; display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .12s, box-shadow .12s, background .12s;
+}
+.model:hover { border-color: var(--muted); }
+.model input { position: absolute; opacity: 0; pointer-events: none; }
+.model .name { font-weight: 650; font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.model .desc { font-size: 12.5px; color: var(--muted); }
+.model .meters { display: flex; gap: 12px; margin-top: 6px; font-size: 11.5px; color: var(--text-2); }
+.model .bar { display: inline-flex; gap: 2px; margin-left: 4px; vertical-align: middle; }
+.model .bar i { width: 10px; height: 4px; border-radius: 2px; background: var(--border-strong); }
+.model .bar i.on { background: var(--accent); }
+.model:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.model:has(input:focus-visible) { box-shadow: var(--ring); }
+
+/* Provider picker (same card look as the models) */
+.provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.provider {
+  position: relative; display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .12s, box-shadow .12s, background .12s;
+}
+.provider:hover { border-color: var(--muted); }
+.provider input { position: absolute; opacity: 0; pointer-events: none; }
+.provider .name { font-weight: 650; font-size: 13.5px; }
+.provider .desc { font-size: 12.5px; color: var(--muted); }
+.provider:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.provider:has(input:focus-visible) { box-shadow: var(--ring); }
+
+/* Drop zone */
+.drop {
+  display: flex; align-items: center; gap: 16px; padding: 18px 20px;
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg);
+  background: var(--surface-2); cursor: pointer; transition: border-color .12s, background .12s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop-icon {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px;
+  background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm);
+}
+.drop-icon svg.i { width: 22px; height: 22px; }
+.drop-text { flex: 1; font-size: 13.5px; line-height: 1.5; }
+.drop.has-file .drop-icon { color: var(--success); }
+
+.profile { min-height: 380px; }
+.job { min-height: 200px; }
+.notes { min-height: 110px; }
+
+/* Live key checks under each key field */
+.key-status { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+.key-status svg.i { width: 14px; height: 14px; }
+.key-status .spinner { width: 12px; height: 12px; }
+.key-status.is-ok { color: var(--success); }
+.key-status.is-warn { color: var(--warn); }
+.key-status.is-bad { color: var(--danger); }
+.key-status.is-checking { color: var(--text-2); }
+.field:has(.key-status.is-bad) .input { border-color: var(--danger); }
+
+/* Preferences: label + hint on the left, control on the right */
+.prefs { display: flex; flex-direction: column; }
+.pref { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 0; border-top: 1px solid var(--border); }
+.pref:first-child { padding-top: 0; border-top: 0; }
+.pref:last-child { padding-bottom: 0; }
+.pref > div:first-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; max-width: 480px; }
+.pref-top { align-items: flex-start; }
+.shortcut-box { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.shortcut-box .keys dt { justify-content: flex-end; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .checklist { position: static; }
+  .model-grid, .provider-grid, .grid-2 { grid-template-columns: 1fr; }
+  .drop { flex-wrap: wrap; }
+  .pref { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .shortcut-box { align-items: flex-start; }
+  .shortcut-box .keys dt { justify-content: flex-start; }
+}
+
+/* Key encryption: red = keys not encrypted yet, green = encrypted and locked */
+.seal-btn {
+  display: grid; place-items: center; flex: none; align-self: flex-start;
+  width: 30px; height: 30px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--danger); background: var(--danger); color: #fff;
+  box-shadow: 0 0 0 3px var(--danger-soft);
+  transition: background .2s, border-color .2s, box-shadow .2s, transform .1s;
+}
+.seal-btn svg.i { width: 15px; height: 15px; }
+.seal-btn:hover { filter: brightness(1.08); }
+.seal-btn:active { transform: scale(.94); }
+.seal-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seal-btn.is-sealed { border-color: var(--success); background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.seal-btn.is-busy { opacity: .6; cursor: progress; }
+@media (prefers-color-scheme: dark) { .seal-btn { color: #0d0f13; } }
+:root[data-theme="dark"] .seal-btn { color: #0d0f13; }
+:root[data-theme="light"] .seal-btn { color: #fff; }
+
+/* A locked key field shows only its ciphertext */
+.input.sealed {
+  font: 12.5px/1.4 var(--mono); color: var(--success); background: var(--success-soft);
+  border-color: var(--success); cursor: not-allowed; user-select: none; -webkit-user-select: none;
+}
+.input.sealed:focus { box-shadow: none; }
+.input-group:has(.input.sealed) .reveal { display: none; }
+
+/* Passphrase: create / unlock panel and the unlocked line under the keys */
+.vault {
+  display: flex; gap: 14px; margin-top: 16px; padding: 16px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-2);
+}
+.vault[hidden], .vault-status[hidden], .vault [hidden] { display: none; }
+.vault-icon {
+  display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+}
+.vault-icon svg.i { width: 18px; height: 18px; }
+.vault-title { font-weight: 600; margin-bottom: 4px; }
+.vault-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.vault-form .input { flex: 1 1 180px; width: auto; }
+.vault-form .btn { height: 36px; }
+.vault .link-btn {
+  margin-top: 6px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 12px; color: var(--accent); text-decoration: underline;
+}
+.vault-status {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 10px 8px 12px;
+  border-radius: var(--radius-sm); background: var(--success-soft); color: var(--success); font-size: 12.5px;
+}
+.vault-status svg.i { width: 14px; height: 14px; flex: none; }
+.vault-status .btn { flex: none; }

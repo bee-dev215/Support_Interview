@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support_Interview · Settings</title>
+  <script src="theme-init.js"></script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="page-head">
+    <div class="wrap head-row">
+      <div class="brand">
+        <img src="icons/icon128.png" alt="" width="32" height="32">
+        <div>
+          <h1>Support_Interview</h1>
+          <p class="muted">Setup &amp; interview preparation</p>
+        </div>
+      </div>
+      <div class="head-actions">
+        <span class="save-state" id="saveState" aria-live="polite"></span>
+        <a class="btn" href="report.html">
+          <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          Interview history
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <!-- Readiness checklist -->
+    <aside class="checklist card">
+      <h2>Readiness</h2>
+      <ul id="checks">
+        <li data-check="ai"><span class="ck"></span><span id="aiCheckLabel">AI API key</span></li>
+        <li data-check="deepgram"><span class="ck"></span>Deepgram API key</li>
+        <li data-check="mic"><span class="ck"></span>Microphone access</li>
+        <li data-check="profile" data-mode="company"><span class="ck"></span>CV profile</li>
+        <li data-check="job"><span class="ck"></span><span id="jobCheckLabel">Job description</span></li>
+      </ul>
+      <p class="muted small" id="readyText"></p>
+    </aside>
+
+    <main class="sections">
+      <!-- 1. Keys -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step">1</span>
+          <div class="grow">
+            <h2>API keys</h2>
+            <p class="muted">Stored only in this browser. The AI provider you pick writes the answers; Deepgram transcribes the audio. Keys are checked as you paste them.</p>
+          </div>
+          <button type="button" class="btn btn-sm" id="testKeys" title="Check every key with a quick read-only request">Test keys</button>
+          <button type="button" class="seal-btn" id="sealKeys" aria-pressed="false"></button>
+        </div>
+        <div class="provider-grid" role="radiogroup" aria-label="AI provider">
+          <label class="provider">
+            <input type="radio" name="provider" value="openai">
+            <span class="name">OpenAI key</span>
+            <span class="desc">GPT models from platform.openai.com</span>
+          </label>
+          <label class="provider">
+            <input type="radio" name="provider" value="anthropic">
+            <span class="name">Anthropic key</span>
+            <span class="desc">Claude models from console.anthropic.com</span>
+          </label>
+        </div>
+        <div class="grid-2">
+          <label class="field" data-provider="openai">
+            <span class="field-label">OpenAI API key</span>
+            <span class="input-group">
+              <input id="openaiKey" class="input" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-ghost btn-icon btn-sm reveal" data-for="openaiKey" title="Show / hide"></button>
+            </span>
+            <span class="field-hint key-status" id="openaiKeyStatus" data-hint="From platform.openai.com → API keys" aria-live="polite">From platform.openai.com → API keys</span>
+          </label>
+          <label class="field" data-provider="anthropic">
+            <span class="field-label">Anthropic API key</span>
+            <span class="input-group">
+              <input id="anthropicKey" class="input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-ghost btn-icon btn-sm reveal" data-for="anthropicKey" title="Show / hide"></button>
+            </span>
+            <span class="field-hint key-status" id="anthropicKeyStatus" data-hint="From console.anthropic.com → API keys" aria-live="polite">From console.anthropic.com → API keys</span>
+          </label>
+          <label class="field">
+            <span class="field-label">Deepgram API key</span>
+            <span class="input-group">
+              <input id="deepgramKey" class="input" type="password" placeholder="Deepgram key" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-ghost btn-icon btn-sm reveal" data-for="deepgramKey" title="Show / hide"></button>
+            </span>
+            <span class="field-hint key-status" id="deepgramKeyStatus" data-hint="From console.deepgram.com → API keys" aria-live="polite">From console.deepgram.com → API keys</span>
+          </label>
+        </div>
+        <p class="vault-status" id="vaultStatus" hidden>
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <span class="grow">Encrypted with your passphrase · unlocked until Chrome closes.</span>
+          <button type="button" class="btn btn-sm" id="lockNow">Lock now</button>
+        </p>
+        <div class="vault" id="vault" hidden>
+          <span class="vault-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <div class="grow">
+            <p class="vault-title" id="vaultTitle"></p>
+            <p class="muted small" id="vaultText"></p>
+            <form class="vault-form" id="vaultForm">
+              <input id="pass1" class="input" type="password" placeholder="Passphrase" spellcheck="false" aria-label="Passphrase">
+              <input id="pass2" class="input" type="password" placeholder="Repeat passphrase" autocomplete="new-password" spellcheck="false" aria-label="Repeat passphrase">
+              <button type="submit" class="btn btn-primary" id="vaultSubmit">Unlock</button>
+              <button type="button" class="btn btn-ghost" id="vaultCancel">Cancel</button>
+            </form>
+            <p class="field-hint key-status" id="vaultMsg" aria-live="polite"></p>
+            <button type="button" class="link-btn" id="vaultReset">Forgot your passphrase?</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Model & language -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step">2</span>
+          <div>
+            <h2>Model &amp; language</h2>
+            <p class="muted">Pick how answers are generated. Faster models show the first words sooner.</p>
+          </div>
+        </div>
+        <div class="model-grid" id="models" data-provider="anthropic" role="radiogroup" aria-label="Claude answer model"></div>
+        <div class="model-grid" id="openaiModels" data-provider="openai" role="radiogroup" aria-label="OpenAI answer model"></div>
+        <label class="field lang">
+          <span class="field-label">Interview language</span>
+          <select id="language" class="select">
+            <option value="en">English</option>
+            <option value="en-US">English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="en-IN">English (India)</option>
+            <option value="multi">Multilingual (auto-detect)</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="pt">Portuguese</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="zh">Chinese</option>
+            <option value="vi">Vietnamese</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- 3. Microphone -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step">3</span>
+          <div>
+            <h2>Microphone</h2>
+            <p class="muted">Transcribes your side as “Me”, so answers stay consistent with what you said and feedback covers both sides. Headphones give the cleanest result.</p>
+          </div>
+        </div>
+        <div class="row">
+          <label class="switch">
+            <input id="captureMic" type="checkbox"><span class="track"></span> Transcribe my microphone
+          </label>
+          <span class="spacer"></span>
+          <span id="micBadge" class="badge">Checking…</span>
+          <button type="button" class="btn" id="enableMic">Grant access</button>
+        </div>
+        <label class="field lang">
+          <span class="field-label">Microphone to transcribe</span>
+          <select id="micDeviceId" class="select">
+            <option value="">System default</option>
+          </select>
+          <span class="field-hint">Pick the same microphone Google Meet uses (Meet: ⋮ → Settings → Audio). If your lines never appear as “Me”, this is usually why.</span>
+        </label>
+      </section>
+
+      <!-- 4. CV (company interviews only) -->
+      <section class="card section" data-mode="company">
+        <div class="section-head">
+          <span class="step">4</span>
+          <div>
+            <h2>Your CV</h2>
+            <p class="muted">The selected AI model reads your CV and builds the profile used for every answer. Review and edit it freely.</p>
+          </div>
+        </div>
+        <label class="drop" id="drop">
+          <input id="cvFile" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" hidden>
+          <span class="drop-icon">
+            <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+          </span>
+          <span class="drop-text" id="dropText"><b>Drop your CV here</b> or click to browse<br><span class="muted small">PDF, TXT or Markdown</span></span>
+          <button type="button" class="btn btn-primary" id="analyze" disabled>Analyze CV</button>
+        </label>
+        <div id="analyzeNotice" hidden></div>
+        <label class="field">
+          <span class="field-label field-row">Candidate profile <span class="muted small" id="profileStats"></span></span>
+          <textarea id="profile" class="textarea mono profile" placeholder="Your generated profile appears here. You can also paste or write it yourself."></textarea>
+        </label>
+        <div class="field">
+          <span class="field-label field-row">
+            Employer research <span class="muted small" id="employersStats"></span>
+            <button type="button" class="btn btn-sm" id="research">Research employers</button>
+          </span>
+          <span class="field-hint">Runs automatically after <b>Analyze CV</b>: searches the web for each company in your profile: history, industry, business model, main products and key achievements, plus lines to say and questions you may get. Used when the interviewer asks about a previous employer. Takes a few minutes, so keep this page open; check the facts before your interview. Click <b>Research employers</b> to run it again after editing your profile.</span>
+          <div id="researchNotice" hidden></div>
+          <textarea id="employers" class="textarea mono profile" aria-label="Employer research" placeholder="Filled in automatically after Analyze CV. You can also paste or edit notes here."></textarea>
+        </div>
+        <label class="field">
+          <span class="field-label">Project details</span>
+          <span class="field-hint">The real specifics your CV leaves out: numbers, a hard bug and how you found it, a decision and the option you rejected, how you tested or measured it. Answers use these as your own experience, so write only what really happened. Without them, answers say how you'd approach things, or leave a <b>[placeholder]</b> for you to fill in live.</span>
+          <textarea id="projects" class="textarea notes" placeholder="e.g. Payments API at Acme: p95 latency went from 800 ms to 120 ms after we added Redis and moved fraud checks to a queue.&#10;Hardest bug: duplicate charges on retries; fixed with idempotency keys."></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">Personal life</span>
+          <span class="field-hint">Spouse, children, home, hobbies, weekends: used when small talk turns personal. Names, ages and places are kept exactly as you write them.</span>
+          <textarea id="personal" class="textarea notes" placeholder="e.g. Married to Anna since 2019, daughter Mia (4). Live in Lyon. Weekends: hiking, cooking Vietnamese food."></textarea>
+        </label>
+      </section>
+
+      <!-- 5. Next conversation: a company interview or a free conversation -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="step" id="conversationStep">5</span>
+          <div>
+            <h2>Next conversation</h2>
+            <p class="muted">Choose what kind of call it is. You can also switch in the panel with the mode button at the top. The two modes are separate: a free conversation shares only your API keys, model and microphone with interviews.</p>
+          </div>
+        </div>
+        <div class="provider-grid" role="radiogroup" aria-label="Conversation mode">
+          <label class="provider">
+            <input type="radio" name="mode" value="company">
+            <span class="name">Company interview</span>
+            <span class="desc">A job interview: answers come from your CV and steer toward the role</span>
+          </label>
+          <label class="provider">
+            <input type="radio" name="mode" value="free">
+            <span class="name">Free conversation</span>
+            <span class="desc">A talk with anyone: answers their questions and brings them round to your point of view</span>
+          </label>
+        </div>
+        <div class="field" data-mode="company">
+          <span class="field-label">Job description</span>
+          <span class="field-hint">Company, role, stack and the job description. Update it before each interview; it's saved with the interview for the feedback report. It also guides where the conversation is steered: toward your strengths that matter for this role.</span>
+          <textarea id="jobDesc" class="textarea job" aria-label="Job description" placeholder="e.g. Acme Corp · Senior Backend Engineer (remote)&#10;Stack: Go, PostgreSQL, Kafka, AWS&#10;&#10;Paste the job description here…"></textarea>
+        </div>
+        <div class="field" data-mode="free">
+          <span class="field-label field-row">
+            Your topic
+            <button type="button" class="btn btn-sm" id="analyzeTopic">Analyze topic</button>
+          </span>
+          <span class="field-hint">Everything about this conversation, in your own words: what it's about, <b>your intention</b> (the point of view you want them to agree with), any facts or reasons you have, and <b>the questions</b> you want to ask them. Click <b>Analyze topic</b> when you're done to work out your goal, arguments and likely objections. During the call, replies answer their questions honestly, then guide them step by step toward your view. Your CV and personal notes are not used here.</span>
+          <div id="topicNotice" hidden></div>
+          <span class="field-hint key-status" id="topicState" aria-live="polite"></span>
+          <textarea id="freeTopic" class="textarea job" aria-label="Your topic" placeholder="Topic: moving our team to a 4-day work week&#10;My intention: convince my manager to run a 3-month trial, starting next quarter.&#10;Why: fewer meetings, we already hit our goals in Q3, two other teams tried it…&#10;&#10;Questions for them:&#10;- What worries you most about it?&#10;- What results would you need to see to keep it?"></textarea>
+        </div>
+      </section>
+
+      <!-- Preferences -->
+      <section class="card section" id="preferences">
+        <div class="section-head">
+          <span class="step" aria-hidden="true">
+            <svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+          </span>
+          <div>
+            <h2>Preferences</h2>
+            <p class="muted">How the live panel behaves and looks. Changes apply immediately, even during an interview.</p>
+          </div>
+        </div>
+        <div class="prefs">
+          <div class="pref">
+            <div>
+              <div class="field-label">Auto-answer</div>
+              <div class="field-hint">Draft an answer as soon as the interviewer asks something. Turn off to answer only on demand.</div>
+            </div>
+            <label class="switch">
+              <input id="autoAnswer" type="checkbox" aria-label="Auto-answer"><span class="track"></span>
+            </label>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Proactive (take the lead)</div>
+              <div class="field-hint">Don't just react: when you've finished speaking and there's a pause, or the interviewer shares something without asking, suggest what to say next to steer toward your strengths. Answers also get a short <b>Hook</b> line. <span class="kbd">L</span> in the panel asks for a move any time.</div>
+            </div>
+            <label class="switch">
+              <input id="proactive" type="checkbox" aria-label="Proactive"><span class="track"></span>
+            </label>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Answer length</div>
+              <div class="field-hint">Short is easiest to glance at mid-sentence; Detailed suits deep technical rounds.</div>
+            </div>
+            <div class="seg-radio" role="radiogroup" aria-label="Answer length">
+              <label><input type="radio" name="answerLength" value="short"><span>Short</span></label>
+              <label><input type="radio" name="answerLength" value="standard"><span>Standard</span></label>
+              <label><input type="radio" name="answerLength" value="detailed"><span>Detailed</span></label>
+            </div>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Reading guide</div>
+              <div class="field-hint">Simple words and short sentences, with highlighted words to stress. Answers always come in short paragraphs with <b>/</b> where to pause; this makes them easier still for English beginners.</div>
+            </div>
+            <label class="switch">
+              <input id="readingGuide" type="checkbox" aria-label="Reading guide"><span class="track"></span>
+            </label>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Nice</div>
+              <div class="field-hint">Now and then, add a short, natural compliment for the interviewer to suggested replies: their look, their voice, their energy, or a thank-you for a friendly chat. At most one per reply, never repeated.</div>
+            </div>
+            <label class="switch">
+              <input id="nice" type="checkbox" aria-label="Nice"><span class="track"></span>
+            </label>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Photo</div>
+              <div class="field-hint">Show the lines prepared from an uploaded photo of the interviewer. When off, they stay hidden in the panel until you turn it back on.</div>
+            </div>
+            <label class="switch">
+              <input id="showPhoto" type="checkbox" aria-label="Photo"><span class="track"></span>
+            </label>
+          </div>
+          <div class="pref">
+            <div>
+              <div class="field-label">Appearance</div>
+              <div class="field-hint">System follows your computer's light or dark mode.</div>
+            </div>
+            <div class="seg-radio" role="radiogroup" aria-label="Appearance">
+              <label><input type="radio" name="theme" value="system"><span>System</span></label>
+              <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+              <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+            </div>
+          </div>
+          <div class="pref pref-top">
+            <div>
+              <div class="field-label">Keyboard shortcuts</div>
+              <div class="field-hint">Work anywhere in Chrome, including while the Meet tab has focus. Inside the panel, press <span class="kbd">?</span> for more.</div>
+            </div>
+            <div class="shortcut-box">
+              <dl class="keys" id="shortcutList"></dl>
+              <button type="button" class="btn btn-sm" id="customizeKeys">Change shortcuts…</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

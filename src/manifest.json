@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Support_Interview",
+  "version": "0.2.0",
+  "description": "Real-time interview assistant for Google Meet: detects questions and drafts answers from your CV.",
+  "minimum_chrome_version": "123",
+  "permissions": ["tabCapture", "offscreen", "sidePanel", "storage", "unlimitedStorage", "activeTab", "scripting"],
+  "host_permissions": ["https://meet.google.com/*", "https://api.anthropic.com/*", "https://api.openai.com/*", "https://api.deepgram.com/*"],
+  "optional_host_permissions": ["<all_urls>"],
+  "content_scripts": [{ "matches": ["https://meet.google.com/*"], "js": ["meet.js", "overlay.js"], "run_at": "document_idle" }],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "web_accessible_resources": [{ "resources": ["sidepanel.html"], "matches": ["<all_urls>"] }],
+  "side_panel": { "default_path": "sidepanel.html" },
+  "options_page": "options.html",
+  "action": { "default_title": "Start Support_Interview on this tab" },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Open the panel and start listening on this tab"
+    },
+    "toggle-listening": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Pause or resume listening"
+    },
+    "answer-last": {
+      "suggested_key": { "default": "Alt+Shift+Q" },
+      "description": "Answer the interviewer's latest question now"
+    },
+    "take-lead": {
+      "suggested_key": { "default": "Alt+Shift+L" },
+      "description": "Take the lead: suggest what to say next to steer the conversation"
+    }
+  },
+  "icons": { "128": "icons/icon128.png" }
+}

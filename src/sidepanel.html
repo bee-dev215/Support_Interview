@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Support_Interview</title>
+  <script src="theme-init.js"></script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <!-- Floating window only (sidepanel.html?float on the interview page): drag here to move it -->
+  <div class="titlebar" id="titlebar" title="Drag to move" hidden>
+    <svg class="i grip" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+    <span class="titlebar-name">Support_Interview</span>
+    <label class="opacity" title="Opacity: lower it to see the call through the window">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/></svg>
+      <input type="range" id="opacity" min="20" max="100" step="5" value="100" aria-label="Window opacity">
+      <span class="opacity-val" id="opacityVal">100%</span>
+    </label>
+    <button class="btn btn-ghost btn-icon btn-sm" id="desktop" title="Out of the browser: an always-on-top window you can move anywhere on your screen" aria-label="Move out of the browser into an always-on-top window">
+      <svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+    </button>
+    <button class="btn btn-ghost btn-icon btn-sm" id="dock" title="Back to the side panel" aria-label="Back to the side panel">
+      <svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>
+    </button>
+    <button class="btn btn-ghost btn-icon btn-sm" id="closeFloat" title="Hide (click the extension icon to bring it back)" aria-label="Hide">
+      <svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="state" id="state" role="status">
+      <span class="state-dot"></span>
+      <span class="state-label" id="stateLabel">Not listening</span>
+      <span class="timer" id="timer" hidden>00:00</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm mode-btn" id="mode" type="button" title="Switch between a company interview and a free conversation">Interview</button>
+      <button class="btn btn-ghost btn-icon" id="float" title="Pop out: a floating window on the page in view; from there, move it out of the browser into an always-on-top window" aria-label="Pop out into a floating window">
+        <svg class="i" viewBox="0 0 24 24"><path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="12" y="13" width="10" height="7" rx="2"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" id="shortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+        <svg class="i" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M10 13h4"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" id="history" title="Interview history" aria-label="Interview history">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" id="options" title="Settings, CV &amp; job description" aria-label="Settings">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Session controls -->
+  <div class="controls">
+    <button class="btn" id="toggle"></button>
+    <button class="btn btn-primary" id="end" title="Interview over: save it and open the feedback report">
+      <svg class="i" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.3 2A6 6 0 0 0 20 3v12a6 6 0 0 1-4.7 1c-2.3 0-4.3-2-7.3-2a6 6 0 0 0-4 1.5"/></svg>
+      End &amp; get feedback
+    </button>
+  </div>
+
+  <!-- Rapport meter -->
+  <div class="rapport" id="rapport" hidden>
+    <div class="rapport-row" title="How warm and easy the conversation feels, re-read every few exchanges">
+      <span class="rapport-label">Rapport</span>
+      <span class="meter" id="rapportMeter"></span>
+      <span class="rapport-score" id="rapportScore">–</span>
+      <span class="trend" id="rapportTrend"></span>
+      <span class="rapport-badges" id="rapportBadges"></span>
+    </div>
+    <div class="rapport-tip" id="rapportTip"></div>
+  </div>
+
+  <!-- Interview direction: where the conversation is and where to steer it -->
+  <div class="rapport direction" id="direction" hidden>
+    <div class="rapport-row">
+      <span class="rapport-label">Topic</span>
+      <span class="direction-topic" id="dirTopic"></span>
+      <span class="rapport-badges" id="dirBadges"></span>
+    </div>
+    <div class="rapport-tip direction-tip" id="dirTip"></div>
+  </div>
+
+  <div id="notice" class="notice-slot" hidden></div>
+
+  <!-- Tabs -->
+  <nav class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-tab="answers" aria-selected="true" title="Answers (1)">Answers <span class="count" id="answersCount" hidden></span></button>
+    <button class="tab" role="tab" data-tab="transcript" aria-selected="false" title="Transcript (2)">Transcript <span class="count" id="transcriptCount" hidden></span></button>
+    <button class="tab" role="tab" data-tab="insights" aria-selected="false" title="Insights (3)">Insights <span class="new-dot" id="insightsDot" hidden></span></button>
+  </nav>
+
+  <main>
+    <!-- Answers -->
+    <section class="pane active" id="pane-answers" role="tabpanel">
+      <div class="caption" id="live" hidden></div>
+      <div class="pane-toolbar">
+        <button class="btn btn-sm" id="answerLast" title="Answer the interviewer's latest line now (A)">
+          <svg class="i" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          Answer last question
+        </button>
+        <button class="btn btn-sm" id="takeLead" title="Suggest what to say next to steer the conversation (L)">
+          <svg class="i" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8-8-2z"/></svg>
+          Take the lead
+        </button>
+        <button class="btn btn-ghost btn-sm btn-danger" id="clearAnswers" title="Delete every answer card, photo lines included, and the uploaded photo. The transcript stays" hidden>
+          <svg class="i" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Clear
+        </button>
+        <div class="seg" role="group" aria-label="Answer text size">
+          <button class="btn btn-ghost btn-sm btn-icon" id="fontDown" title="Smaller answer text (−)" aria-label="Smaller answer text">A</button>
+          <button class="btn btn-ghost btn-sm btn-icon" id="fontUp" title="Larger answer text (+)" aria-label="Larger answer text">A</button>
+        </div>
+      </div>
+      <div id="answers" class="answers" aria-live="polite"></div>
+      <div class="empty" id="answersEmpty">
+        <div class="empty-icon">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="empty-title" id="emptyTitle">Ready when you are</div>
+        <ol class="empty-steps" id="emptySteps">
+          <li>Open your interview: Google Meet, Zoom, Teams, an AI interview site or any other web page.</li>
+          <li>Click the <b>Support_Interview</b> icon on that tab<span id="startKeyHint"></span>.</li>
+          <li>Answers appear here when the interviewer asks a question or makes a request (like "send me your CV"), plus moves to steer the conversation when it pauses.</li>
+        </ol>
+        <p class="muted small" id="emptyListening" hidden>Missed one? Press <span class="kbd">A</span> or click <b>Answer last question</b>.</p>
+      </div>
+    </section>
+
+    <!-- Transcript -->
+    <section class="pane" id="pane-transcript" role="tabpanel">
+      <div class="pane-toolbar">
+        <span class="legend"><span class="badge badge-accent" id="otherLegend">Interviewer</span><span class="badge badge-me">Me</span></span>
+        <button class="btn btn-ghost btn-sm" id="copy" title="Copy the full transcript">
+          <svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy</span>
+        </button>
+      </div>
+      <div id="lines" class="lines"></div>
+      <div id="liveLines" class="lines"></div>
+      <div class="empty" id="transcriptEmpty">
+        <div class="empty-title">No conversation yet</div>
+        <p class="muted small">Both sides of the call appear here once listening starts. Hover an interviewer line to answer it.</p>
+      </div>
+      <button class="btn btn-sm jump" id="jump" hidden>↓ Latest</button>
+    </section>
+
+    <!-- Insights -->
+    <section class="pane" id="pane-insights" role="tabpanel">
+      <div class="pane-toolbar">
+        <span class="muted small" id="insightsMeta">Updates automatically as the conversation grows</span>
+        <button class="btn btn-sm" id="analyze" title="Analyze the whole conversation now">
+          <svg class="i" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          Analyze now
+        </button>
+      </div>
+      <div class="timeline card" id="timelineBox" hidden>
+        <div class="timeline-head">Rapport over time</div>
+        <div id="timeline" class="timeline-rows"></div>
+      </div>
+      <div id="insights" class="md insights"></div>
+      <div class="empty" id="insightsEmpty">
+        <div class="empty-title">No insights yet</div>
+        <p class="muted small">A summary, the facts you've claimed, what the interviewer cares about, weak spots and questions to ask appear here during the interview.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Composer -->
+  <footer class="composer">
+    <form id="ask" class="ask">
+      <span class="ask-field">
+        <input id="askText" class="input" placeholder="Ask or paste a question…" autocomplete="off" aria-label="Ask a question">
+        <span class="kbd ask-kbd" aria-hidden="true" title="Press / to type">/</span>
+      </span>
+      <button class="btn btn-icon" type="button" id="photo" title="Photo (P): upload, paste (Ctrl+V) or drop a screenshot of the interviewer's face. Their face is studied and kind lines about them are prepared (a movie lookalike and more); turn on Photo to see them" aria-label="Upload a photo of the interviewer">
+        <svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+      </button>
+      <input type="file" id="photoFile" accept="image/*" hidden>
+      <button class="btn btn-primary btn-icon" type="submit" title="Get an answer (Enter)" aria-label="Get an answer">
+        <svg class="i" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+      </button>
+    </form>
+    <div class="composer-meta">
+      <label class="switch" title="Answer detected questions automatically">
+        <input type="checkbox" id="auto" checked><span class="track"></span> Auto-answer
+      </label>
+      <label class="switch" title="Take the initiative: suggest what to say after a pause or when the interviewer shares something">
+        <input type="checkbox" id="proactive" checked><span class="track"></span> Proactive
+      </label>
+      <label class="switch" title="Add friendly compliments for the interviewer (looks, voice, energy) to suggested replies">
+        <input type="checkbox" id="nice"><span class="track"></span> Nice
+      </label>
+      <label class="switch" title="Show the lines prepared from the interviewer's photo (movie lookalike, compliments). Off hides them; uploads are still studied">
+        <input type="checkbox" id="showPhoto" checked><span class="track"></span> Photo
+      </label>
+      <button class="btn btn-ghost btn-sm" id="discard" title="Discard this session without saving">Discard session</button>
+    </div>
+  </footer>
+
+  <!-- Keyboard shortcuts -->
+  <dialog id="keys" class="sheet" aria-labelledby="keysTitle">
+    <div class="sheet-head">
+      <h2 id="keysTitle">Keyboard shortcuts</h2>
+      <button class="btn btn-ghost btn-icon btn-sm" id="keysClose" aria-label="Close">
+        <svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <h3>In this panel</h3>
+    <dl class="keys">
+      <dt><span class="kbd">A</span></dt><dd>Answer the last question</dd>
+      <dt><span class="kbd">L</span></dt><dd>Take the lead: what to say next</dd>
+      <dt><span class="kbd">/</span></dt><dd>Type a question</dd>
+      <dt><span class="kbd">P</span></dt><dd>Upload the interviewer's photo (or paste / drop one)</dd>
+      <dt><span class="kbd">R</span></dt><dd>Regenerate the latest answer</dd>
+      <dt><span class="kbd">S</span></dt><dd>Make it shorter</dd>
+      <dt><span class="kbd">D</span></dt><dd>Go deeper technically</dd>
+      <dt><span class="kbd">C</span></dt><dd>Copy the latest answer</dd>
+      <dt><span class="kbd">X</span></dt><dd>Delete the latest card</dd>
+      <dt><span class="kbd">Esc</span></dt><dd>Stop generating</dd>
+      <dt><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span></dt><dd>Answers · Transcript · Insights</dd>
+      <dt><span class="kbd">+</span> <span class="kbd">−</span></dt><dd>Answer text size</dd>
+    </dl>
+    <h3>Anywhere in Chrome</h3>
+    <dl class="keys" id="globalKeys"></dl>
+    <button class="btn btn-sm" id="customizeKeys">Change shortcuts…</button>
+  </dialog>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

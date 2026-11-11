@@ -1,0 +1,201 @@
+/* Shared design system for all Support_Interview pages.
+   Colors are light-dark() pairs: the scheme follows the OS unless theme-init.js sets
+   data-theme from the Appearance setting. Light-mode text colors meet WCAG AA (4.5:1) on their soft backgrounds. */
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#f7f8fa, #0d0f13);
+  --surface: light-dark(#ffffff, #15181e);
+  --surface-2: light-dark(#f1f3f6, #1c2028);
+  --border: light-dark(#e3e6eb, #262b35);
+  --border-strong: light-dark(#cdd2da, #353b48);
+  --text: light-dark(#16181d, #e9ecf1);
+  --text-2: light-dark(#4a5160, #b4bac6);
+  --muted: light-dark(#646b7a, #868e9c);
+  --accent: light-dark(#3b5bdb, #7c93f5);
+  --accent-hover: light-dark(#3249c2, #93a6f8);
+  --accent-soft: light-dark(#e8edff, #1e2647);
+  --accent-text: light-dark(#ffffff, #0d0f13);
+  --me: light-dark(#087a5b, #3fcf9f);
+  --me-soft: light-dark(#e2f6ef, #12302a);
+  --success: light-dark(#0b7a3b, #4ccf83);
+  --success-soft: light-dark(#e3f6ea, #11301f);
+  --warn: light-dark(#946010, #f0b84a);
+  --warn-soft: light-dark(#fdf3dc, #33270f);
+  --danger: light-dark(#c2255c, #f2668f);
+  --danger-soft: light-dark(#fde8ef, #3a1622);
+  --live: light-dark(#e03131, #ff6b6b);
+  --backdrop: light-dark(rgb(16 24 40 / 35%), rgb(0 0 0 / 55%));
+  --shadow-sm: 0 1px 2px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 40%));
+  --shadow: 0 1px 3px light-dark(rgb(16 24 40 / 8%), rgb(0 0 0 / 40%)), 0 4px 12px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 30%));
+  --shadow-lg: 0 12px 32px light-dark(rgb(16 24 40 / 16%), rgb(0 0 0 / 50%));
+  --ring: 0 0 0 3px light-dark(rgb(59 91 219 / 25%), rgb(124 147 245 / 35%));
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+svg.i { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+a { color: var(--accent); }
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  font: 500 13px/1 var(--font); white-space: nowrap; cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
+.btn-ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); border-color: transparent; color: var(--text); }
+.btn-sm { height: 26px; padding: 0 8px; font-size: 12px; gap: 4px; }
+.btn-sm svg.i { width: 14px; height: 14px; }
+.btn-lg { height: 40px; padding: 0 18px; font-size: 14px; }
+.btn-icon { width: 32px; padding: 0; }
+.btn-icon.btn-sm { width: 26px; }
+
+/* Inputs */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field-label { font-weight: 600; font-size: 13px; color: var(--text); }
+.field-hint { font-size: 12px; color: var(--muted); }
+.input, .select, .textarea {
+  width: 100%; min-height: 36px; padding: 7px 11px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font: 14px/1.4 var(--font);
+  transition: border-color .12s, box-shadow .12s;
+}
+.input::placeholder, .textarea::placeholder { color: var(--muted); }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--muted); }
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.textarea { resize: vertical; line-height: 1.55; }
+.textarea.mono { font: 13px/1.55 var(--mono); }
+.input-group { position: relative; display: flex; }
+.input-group .input { padding-right: 40px; }
+.input-group .btn { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); }
+
+/* Toggle switch */
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text-2); }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .track {
+  position: relative; width: 32px; height: 18px; border-radius: 999px;
+  background: var(--border-strong); transition: background .15s; flex: none;
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 30%); transition: transform .15s;
+}
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track::after { transform: translateX(14px); }
+.switch input:focus-visible + .track { box-shadow: var(--ring); }
+
+/* Badges / chips */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px;
+  border-radius: 999px; font: 600 11.5px/1 var(--font); white-space: nowrap;
+  background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border);
+}
+.badge-accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+.badge-warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+.badge-me { background: var(--me-soft); color: var(--me); border-color: transparent; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+
+/* Cards */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+}
+
+/* Notices */
+.notice {
+  display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px;
+  border-radius: var(--radius); font-size: 13px; line-height: 1.45;
+  background: var(--surface-2); color: var(--text-2);
+}
+.notice svg.i { margin-top: 1px; }
+.notice .grow { flex: 1; }
+.notice-warn { background: var(--warn-soft); color: var(--warn); }
+.notice-error { background: var(--danger-soft); color: var(--danger); }
+.notice-success { background: var(--success-soft); color: var(--success); }
+
+/* Markdown content */
+.md { line-height: 1.6; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 8px; }
+.md ul, .md ol { margin: 4px 0 10px; padding-left: 20px; }
+.md li { margin: 3px 0; }
+.md li::marker { color: var(--muted); }
+.md strong { font-weight: 650; }
+.md code { font: 0.9em var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.md hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
+
+.spinner { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Blinking caret at the end of the text being streamed (inside the last paragraph or list item). */
+.streaming-caret:empty::after,
+.streaming-caret > :is(p, h2, h3, h4, h5, div):last-child::after,
+.streaming-caret > :is(ul, ol):last-child > li:last-child::after {
+  content: ""; display: inline-block; width: 7px; height: 1.05em; margin-left: 2px;
+  vertical-align: -2px; background: var(--accent); border-radius: 1px; animation: caret 1s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgb(224 49 49 / 50%); } 70% { box-shadow: 0 0 0 6px rgb(224 49 49 / 0%); } 100% { box-shadow: 0 0 0 0 rgb(224 49 49 / 0%); } }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.muted { color: var(--muted); }
+.kbd {
+  display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; border-radius: 4px; font: 11px/16px var(--mono); text-align: center; color: var(--text-2);
+  background: var(--surface);
+}
+
+/* Keyboard shortcut list: key caps | what they do */
+.keys { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px 14px; margin: 0; font-size: 13px; }
+.keys dt { display: flex; gap: 3px; white-space: nowrap; }
+.keys dd { margin: 0; color: var(--text-2); }
+
+/* Segmented radio (e.g. Short / Standard / Detailed) */
+.seg-radio { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; }
+.seg-radio label { position: relative; }
+.seg-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-radio span {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 6px; cursor: pointer;
+  font: 600 13px/1 var(--font); color: var(--text-2); transition: background .12s, color .12s;
+}
+.seg-radio span:hover { color: var(--text); }
+.seg-radio input:checked + span { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.seg-radio input:focus-visible + span { box-shadow: var(--ring); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

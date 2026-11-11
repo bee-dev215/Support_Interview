@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Feedback</title>
+  <script src="theme-init.js"></script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <header class="page-head">
+    <div class="wrap head-row">
+      <a class="brand" href="report.html">
+        <img src="icons/icon128.png" alt="" width="28" height="28">
+        <span>Support_Interview</span>
+      </a>
+      <nav class="head-nav">
+        <a class="btn btn-ghost" href="report.html" id="navHistory">Interviews</a>
+        <a class="btn btn-ghost" href="options.html">Settings</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap page">
+    <!-- History list -->
+    <section id="listView" hidden>
+      <div class="list-head">
+        <div>
+          <h1>Interviews</h1>
+          <p class="muted" id="listSummary">Your past interviews and feedback reports.</p>
+        </div>
+        <div class="list-tools">
+          <input id="search" class="input search" type="search" placeholder="Search interviews…">
+          <button class="btn btn-danger" id="clearHistory" title="Delete every saved interview and its feedback" hidden>Delete all</button>
+        </div>
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <!-- Single interview -->
+    <section id="reportView" hidden>
+      <a class="back" href="report.html">← All interviews</a>
+
+      <div class="hero card">
+        <div class="ring" id="ring" style="--p:0">
+          <div class="ring-inner"><span id="ringScore">–</span><small>/10</small></div>
+        </div>
+        <div class="hero-body">
+          <div class="hero-top">
+            <span id="outcome" class="badge" hidden></span>
+            <span id="outcomeWhy" class="outcome-why"></span>
+          </div>
+          <h1 id="title">Interview</h1>
+          <div class="chips" id="meta"></div>
+          <p class="summary" id="summary"></p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="seg-tabs" role="tablist">
+          <button class="seg-tab active" data-view="feedback">Feedback</button>
+          <button class="seg-tab" data-view="transcript">Transcript</button>
+          <button class="seg-tab" data-view="insights">Live insights</button>
+        </div>
+        <div class="toolbar-actions">
+          <span id="msg" class="muted small" aria-live="polite"></span>
+          <button class="btn" id="regen" title="Write the feedback again">
+            <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 16H3v5"/></svg>
+            Regenerate
+          </button>
+          <button class="btn" id="copy" title="Copy the feedback as Markdown">
+            <svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button class="btn" id="download" title="Download feedback, insights and transcript as one Markdown file">
+            <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Download
+          </button>
+          <button class="btn" id="print" title="Print or save as PDF">
+            <svg class="i" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            PDF
+          </button>
+          <button class="btn btn-danger btn-icon" id="del" title="Delete this interview" aria-label="Delete this interview">
+            <svg class="i" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="view" id="view-feedback">
+        <div id="feedback" class="feedback"></div>
+      </div>
+      <div class="view" id="view-transcript" hidden>
+        <div class="card pad"><div id="transcript" class="transcript"></div></div>
+      </div>
+      <div class="view" id="view-insights" hidden>
+        <div class="card pad rapport-card" id="rapportCard" hidden>
+          <h3>Rapport over time</h3>
+          <div id="rapportTimeline" class="rapport-timeline"></div>
+        </div>
+        <div class="card pad"><div id="insights" class="md"></div></div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="report.js"></script>
+</body>
+</html>
