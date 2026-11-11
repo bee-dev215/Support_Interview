@@ -97,9 +97,9 @@
     <section class="pane active" id="pane-answers" role="tabpanel">
       <div class="caption" id="live" hidden></div>
       <div class="pane-toolbar">
-        <button class="btn btn-sm" id="answerLast" title="Answer the interviewer's latest line now (A)">
+        <button class="btn btn-primary" id="answerLast" title="Answer what they just said (Space)">
           <svg class="i" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-          Answer last question
+          Answer <span class="kbd kbd-on-primary">Space</span>
         </button>
         <button class="btn btn-sm" id="takeLead" title="Suggest what to say next to steer the conversation (L)">
           <svg class="i" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8-8-2z"/></svg>
@@ -125,7 +125,7 @@
           <li>Click the <b>Support_Interview</b> icon on that tab<span id="startKeyHint"></span>.</li>
           <li>Answers appear here when the interviewer asks a question or makes a request (like "send me your CV"), plus moves to steer the conversation when it pauses.</li>
         </ol>
-        <p class="muted small" id="emptyListening" hidden>Missed one? Press <span class="kbd">A</span> or click <b>Answer last question</b>.</p>
+        <p class="muted small" id="emptyListening" hidden>When they ask something, press <span class="kbd">Space</span> or click <b>Answer</b>.</p>
       </div>
     </section>
 
@@ -184,8 +184,8 @@
       </button>
     </form>
     <div class="composer-meta">
-      <label class="switch" title="Answer detected questions automatically">
-        <input type="checkbox" id="auto" checked><span class="track"></span> Auto-answer
+      <label class="switch" title="Answer detected questions by itself. Off: answers only when you press Space or click Answer">
+        <input type="checkbox" id="auto"><span class="track"></span> Auto-answer
       </label>
       <label class="switch" title="Take the initiative: suggest what to say after a pause or when the interviewer shares something">
         <input type="checkbox" id="proactive" checked><span class="track"></span> Proactive
@@ -210,7 +210,7 @@
     </div>
     <h3>In this panel</h3>
     <dl class="keys">
-      <dt><span class="kbd">A</span></dt><dd>Answer the last question</dd>
+      <dt><span class="kbd">Space</span> <span class="kbd">A</span></dt><dd>Answer what they just said</dd>
       <dt><span class="kbd">L</span></dt><dd>Take the lead: what to say next</dd>
       <dt><span class="kbd">/</span></dt><dd>Type a question</dd>
       <dt><span class="kbd">P</span></dt><dd>Upload the interviewer's photo (or paste / drop one)</dd>

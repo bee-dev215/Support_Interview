@@ -14,6 +14,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.target !== "offscreen") return;
   if (msg.type === "start-capture") start(msg);
   if (msg.type === "stop-capture") stopAll();
+  if (msg.type === "flush") for (const src of sources.values()) src.finalize(); // Answer pressed: hand over what's heard
 });
 
 async function start({ source = "tab", streamId, callDeviceId, deepgramKey, language, captureMic, micDeviceId }) {

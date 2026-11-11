@@ -253,3 +253,7 @@ body.dropping::after {
 .sheet h2 { margin: 0; font-size: 15px; }
 .sheet h3 { margin: 14px 0 8px; font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .sheet .keys { margin-bottom: 12px; }
+
+/* Answer: the main action when answers come on demand (Space) */
+#answerLast { padding: 7px 16px; font-size: 14px; font-weight: 650; }
+.kbd-on-primary { background: rgb(255 255 255 / 18%); border-color: rgb(255 255 255 / 35%); color: inherit; box-shadow: none; }

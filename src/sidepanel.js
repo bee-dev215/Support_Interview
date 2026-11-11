@@ -128,7 +128,7 @@ function updateEmpty() {
   const answered = visibleCards().length;
   const paused = !capturing && transcript.length > 0;
   $("answersEmpty").hidden = answered > 0;
-  $("emptyTitle").textContent = capturing ? "Listening… waiting for a question or request" : paused ? "Paused" : "Ready when you are";
+  $("emptyTitle").textContent = capturing ? ($("auto").checked ? "Listening… waiting for a question or request" : "Listening… writing the transcript") : paused ? "Paused" : "Ready when you are";
   $("emptySteps").hidden = capturing || paused;
   $("emptyListening").hidden = !capturing && !paused;
   $("answerLast").hidden = !capturing && !paused;
@@ -754,10 +754,12 @@ const SWITCHES = { auto: "autoAnswer", proactive: "proactive", nice: "nice", sho
 chrome.storage.local.get(Object.values(SWITCHES)).then((stored) => {
   for (const [id, key] of Object.entries(SWITCHES)) $(id).checked = stored[key] ?? DEFAULTS[key];
   applyPhoto();
+  updateEmpty();
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   for (const [id, key] of Object.entries(SWITCHES)) if (changes[key]) $(id).checked = changes[key].newValue;
+  if (changes.autoAnswer) updateEmpty();
   if (changes.showPhoto) applyPhoto(true);
 });
 for (const [id, key] of Object.entries(SWITCHES)) {
@@ -786,13 +788,18 @@ twoStep($("clearAnswers"), "Click again to clear", () => toBackground({ type: "c
 
 // Single-key shortcuts while the panel has focus (not while typing or with the shortcuts sheet open).
 document.addEventListener("keydown", (e) => {
-  const typing = !!e.target.closest?.("input, textarea");
+  // Switches and sliders aren't typing: Space still answers after you've clicked one.
+  const typing = !!e.target.closest?.("textarea, input:not([type=checkbox], [type=radio], [type=range])");
   if (e.key === "Escape" && typing) return e.target.blur();
   if (typing || e.ctrlKey || e.metaKey || e.altKey || $("keys").open) return;
   const latest = visibleCards().at(-1);
   const actions = {
     "/": () => $("askText").focus(),
     "?": openKeys,
+    " ": () => {
+      document.activeElement?.blur(); // otherwise Space would also press or toggle whatever has focus
+      if (!e.repeat) toBackground({ type: "answer-last" }); // held down: answer once
+    },
     a: () => toBackground({ type: "answer-last" }),
     l: () => toBackground({ type: "take-lead" }),
     p: () => $("photoFile").click(),

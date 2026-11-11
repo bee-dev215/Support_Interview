@@ -77,6 +77,12 @@ const startFailed = (e) => status(/invoked|activeTab/i.test(e.message)
 // Popped out: the panel shows as a floating box on the page (overlay.js) instead of in the side panel.
 let floating = false;
 chrome.storage.local.get("floating").then((r) => (floating = !!r.floating));
+
+// Answers come on demand (Answer button / Space) from this version on: switch existing installs over once.
+// Auto-answer can still be turned back on in the panel or Options.
+chrome.storage.local.get("onDemandAnswers").then((r) => {
+  if (!r.onDemandAnswers) chrome.storage.local.set({ autoAnswer: false, onDemandAnswers: true });
+});
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.floating) floating = !!changes.floating.newValue;
   // Company interview <-> free conversation: the direction strip reads different things, so read it afresh.
@@ -458,11 +464,21 @@ function deleteAnswers(ids) {
   toPanel({ type: "answers-removed", ids });
 }
 
-// "Answer last question" button / shortcut: the newest interviewer line, answered even if auto-answer is off.
-function answerLast() {
-  const last = session.transcript.findLast((u) => u.speaker === "interviewer");
-  if (!last) return status("Nothing from the other side yet. Type the question in the box below instead.", "warn");
-  return answer(last.text, { force: true });
+// Answer button / Space / shortcut: answers what the other side said since you last spoke. A question often
+// arrives as several transcript lines ("So tell me about your last project." "What was the hardest part?"), so
+// they are answered together. If you've already started replying, it answers their lines before that.
+const FLUSH_WAIT_MS = 450; // time for Deepgram to finalize speech still in progress
+async function answerLast() {
+  // Turn speech still being transcribed into transcript lines first, so a question just finished is included.
+  toOffscreen({ type: "flush" });
+  await new Promise((r) => setTimeout(r, FLUSH_WAIT_MS));
+  const lines = session.transcript;
+  let end = lines.length;
+  while (end > 0 && lines[end - 1].speaker !== "interviewer") end--;
+  let start = end;
+  while (start > 0 && lines[start - 1].speaker === "interviewer") start--;
+  if (end === 0) return status("Nothing from the other side yet. Type the question in the box below instead.", "warn");
+  return answer(lines.slice(start, end).map((u) => u.text).join(" "), { force: true });
 }
 
 const missingKey = (s) => s.keysLocked
@@ -532,7 +548,8 @@ const normalize = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, "").split
 // For both, question is just the card's label.
 async function answer(question, { force = false, style = "", manual = false, auto = false, lead = false, photo = false } = {}) {
   const s = await getSettings();
-  if (auto && !(lead ? s.proactive : s.autoAnswer)) return;
+  // Auto-answer off = answer only on demand: nothing appears on its own, "Your move" cards included.
+  if (auto && !(s.autoAnswer && (!lead || s.proactive))) return;
   if (!aiKey(s)) return status(missingKey(s), "error");
   if (photo && !session.photo) return status("That photo is gone with the old session. Upload it again.", "warn");
 

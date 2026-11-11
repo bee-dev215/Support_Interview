@@ -61,6 +61,7 @@ $("share").addEventListener("click", async () => {
 });
 
 chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.target === "offscreen" && msg.type === "flush") live?.finalize();
   if (msg.target === "offscreen" && msg.type === "stop-capture") {
     stop();
     window.close();

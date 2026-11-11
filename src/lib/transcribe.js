@@ -6,7 +6,7 @@
 const toBackground = (msg) => chrome.runtime.sendMessage({ target: "background", ...msg }).catch(() => {});
 const toPanel = (msg) => chrome.runtime.sendMessage({ target: "panel", ...msg }).catch(() => {});
 
-// Returns { flush, stop }. onFail(text) is called once if the connection breaks.
+// Returns { finalize, flush, stop }. onFail(text) is called once if the connection breaks.
 export function transcribe(speaker, stream, { deepgramKey, language, onFail }) {
   const params = new URLSearchParams({
     model: "nova-3",
@@ -52,8 +52,8 @@ export function transcribe(speaker, stream, { deepgramKey, language, onFail }) {
         spokeAt = Date.now();
         toBackground({ type: "speaking", speaker });
       }
-      // speech_final = endpoint after a pause; flush there for lower latency.
-      if (d.speech_final) flush();
+      // speech_final = endpoint after a pause; flush there for lower latency. from_finalize = the reply to finalize().
+      if (d.speech_final || d.from_finalize) flush();
     } else if (d.type === "UtteranceEnd") {
       flush();
     }
@@ -63,6 +63,13 @@ export function transcribe(speaker, stream, { deepgramKey, language, onFail }) {
   ws.onerror = () => !stopped && onFail(`Deepgram connection error for ${who} audio (check your API key).`);
   ws.onclose = (e) => {
     if (!stopped && e.code !== 1000) onFail(`Deepgram closed for ${who} audio (${e.code}${e.reason ? `: ${e.reason}` : ""}).`);
+  };
+
+  // Answer pressed mid-sentence: Deepgram transcribes the audio it still holds right away instead of waiting for
+  // a pause, and that text is flushed as soon as it comes back.
+  const finalize = () => {
+    flush();
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "Finalize" }));
   };
 
   const stop = () => {
@@ -79,5 +86,5 @@ export function transcribe(speaker, stream, { deepgramKey, language, onFail }) {
     stream.getTracks().forEach((t) => t.stop());
   };
 
-  return { flush, stop };
+  return { finalize, flush, stop };
 }

@@ -14,7 +14,7 @@ export const DEFAULTS = {
   callDeviceId: "", // the audio input device for callSource "device"
   captureMic: true,
   micDeviceId: "", // "" = the system default microphone
-  autoAnswer: true,
+  autoAnswer: false, // answers only on demand (Answer button / Space); on = answer detected questions by itself
   proactive: true,
   answerLength: "standard",
   readingGuide: true,
