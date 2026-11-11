@@ -578,7 +578,7 @@ async function answer(question, { force = false, style = "", manual = false, aut
     const rapport = session.rapport?.at(-1);
     const direction = session.direction;
     const stream = lead ? streamLead(s, session.transcript, { force, style, rapport, direction })
-      : streamAnswer(s, session.transcript, question, style, rapport, direction);
+      : streamAnswer(s, session.transcript, question, style, rapport, direction, force);
     currentAnswer = stream;
     stream.on("text", (delta) => {
       if (id !== answerSeq || kind === "none") return;

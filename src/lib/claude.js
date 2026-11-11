@@ -194,7 +194,7 @@ const PERSUADE = `How to persuade (applies to everything you write):
 - Start from Them's side: acknowledge in a few words what is reasonable in their view or worry ("That's fair, ...", "I had the same worry at first."), then answer it. Never tell them they're wrong.
 - Tie every argument to what Them cares about (their goals, time, money, risk, the people around them), not to what Me wants.
 - One point at a time: choose the single strongest argument or reply (from MY TOPIC and the GAME PLAN) that fits this exact moment and hasn't been used yet. Never stack every reason at once. Never repeat an argument Me already made; if it must come back, bring a new angle, example or question.
-- Build small agreements: where it fits, end with a check that invites a "yes" on one step ("Would you agree that ...?", "Does that make sense for you?"), or with one of Me's own questions from the topic when its moment has come and it hasn't been asked yet.
+- Build small agreements now and then, not in every reply: when Them seems close on one step, end with a check that invites a "yes" ("Would you agree that ...?"), or ask one of Me's own questions from the topic when its moment has clearly come and it hasn't been asked yet. Most replies should simply end on a clear statement.
 - Use questions so Them reaches the conclusion themselves. When Them answers one of Me's questions, use that answer as the bridge to Me's view.
 - Concede small, true points to earn credibility on the big one. Respect the "Careful" points in the game plan.
 - Stay honest: use only facts from the topic, the game plan, the conversation, or accurate general knowledge. Never invent numbers, studies, promises or deadlines; when a reply needs a figure that isn't known, put a short placeholder in square brackets, like [the real cost], for Me to fill in. No pressure, false urgency, guilt or empty flattery: they backfire.
@@ -209,7 +209,8 @@ const FREE_VOICE = `How Me should sound:
 - Never use written connectors (furthermore, moreover, additionally, firstly, in conclusion) or filler like "That's a great question".`;
 
 const FREE_LEAD_FORMAT = `How to take the lead (Me speaks up on their own initiative to move the conversation toward agreement):
-- 1-3 short spoken sentences, first person, linked so they flow as one turn: a brief genuine reaction to what was just said, then the next step. That step is one of: one of Me's questions that hasn't been asked yet and fits now; the next unused argument from the game plan, tied to what Them just said; an agreement check; or, if Them is close to agreeing, a one-sentence summary and a concrete next step.
+- 1-3 short spoken sentences, first person, linked so they flow as one turn: a brief genuine reaction to what was just said, then the next step. That step is one of: the next unused argument from the game plan, tied to what Them just said; if Them is close to agreeing, a one-sentence summary and a concrete next step; one of Me's questions that hasn't been asked yet, when its moment has clearly come; or an agreement check, when Them seems ready for one.
+- End on a statement by default; use a question only when it truly fits. Never add one just to hand the turn back, and never end two moves in a row with a question.
 - Steer gently, never hijack. If Them is explaining something that matters to them, prefer a question that shows Me listened.
 - Then, after a blank line, one line in italics saying what the move aims at (under 15 words), so Me can decide whether to use it: *Why: ...*
 - Under 70 words in total. No bullets, no headings.`;
@@ -219,13 +220,16 @@ const READ_THEM = `Before you write, read the moment from both sides:
 - Me ("Me" lines): what Me already said, argued or promised, which of Me's questions have been asked and answered, and which of Me's arguments haven't been used yet.
 - The next step on the conversation path toward agreement.`;
 
-const freeAnswerTask = ({ shape, words }, proactive) => `TASK: Help Me respond to Them's latest utterance (the last "Them:" line above), so that Them gets a good answer and the conversation moves toward Me's point of view.
+const freeAnswerTask = ({ shape, words }, proactive, onDemand) => `TASK: Help Me respond to Them's latest utterance (the last "Them:" line above), so that Them gets a good answer and the conversation moves toward Me's point of view.
 
 First decide what kind of moment it is:
-1. A question or request to Me -> write a reply (format below).
+1. A question or request to Me -> write a reply (format below). If it mixes an explanation with a question, answer the question and use the explanation as context.
 2. A doubt, objection or disagreement with Me's view, even when it isn't phrased as a question ("I'm not sure that works", "That sounds expensive", "We tried that before") -> write a reply (format below). These are the most important moments of the conversation.
 3. Small talk, a joke or a personal remark -> start your reply with exactly "SMALLTALK:" followed by 1-2 short, natural sentences Me can say back. If it fits easily, end with a light bridge back toward the topic. When it turns personal, follow the personal-questions rule below.
-${proactive
+${onDemand
+    ? `4. Them explains, describes or states something without asking: their situation, an opinion, a story, agreement with a point, or an answer to one of Me's questions -> write a reply (format below): a short genuine reaction to what they said, then a response or follow-up explanation that builds on it and moves a step toward Me's view. Me asked for this reply, so never answer NO_QUESTION, and don't use the LEAD: tag.
+5. Pure filler ("okay", "can you hear me", "one second") -> one short, natural line to say back. Never NO_QUESTION.`
+    : proactive
     ? `4. Them shares something without asking: their situation, an opinion, a story, agreement with a point, or an answer to one of Me's questions -> start your reply with exactly "LEAD:" followed by a move that takes the initiative (see "How to take the lead").
 5. Nothing to respond to (pure filler like "okay", "can you hear me", "one second") -> reply with exactly: NO_QUESTION`
     : `4. Nothing to respond to (filler like "okay", "can you hear me", or Them simply answering Me's question) -> reply with exactly: NO_QUESTION`}
@@ -236,13 +240,13 @@ ${PERSUADE}
 
 ${FREE_VOICE}
 
-Reply format (cases 1 and 2): flowing spoken prose in first person, written as ${shape}.
+Reply format (cases 1 and 2${onDemand ? " and 4" : ""}): flowing spoken prose in first person, written as ${shape}.
 - Me reads it straight through, out loud, during the call: full, connected sentences. No bullets, no numbered lists, no labels, no headings.
 - Open with the direct answer or the acknowledgement, never a restatement of what Them said.
 - Stay consistent with every fact and promise Me already stated. Never contradict them.
-- Close with at most one agreement check or one of Me's questions, written as the natural last sentence, never on a separate labeled line; none is fine when the reply already lands.
+- End on a statement by default. Close with an agreement check or one of Me's questions only when it truly fits this moment (Them seems close to agreeing, or that question's moment has clearly come), written as the natural last sentence, never on a separate labeled line. Never add a question just to hand the turn back.
 - Keep it under ${words} words. No preamble.
-${FREE_PERSONAL}${proactive ? `\n\n${FREE_LEAD_FORMAT}` : ""}`;
+${FREE_PERSONAL}${proactive && !onDemand ? `\n\n${FREE_LEAD_FORMAT}` : ""}`;
 
 const FREE_LEAD_TASK = (force) => `TASK: It's Me's moment to take the initiative${force ? ": Me asked for a way to move the conversation forward" : ": Me finished speaking and there's a pause"}.
 Read the whole conversation, then write what Me can say next on their own initiative to move Them toward Me's point of view.
@@ -461,18 +465,23 @@ const PERSONAL_LIFE = `- Marriage, family and daily life (spouse, how they met, 
 
 // Proactive mode: what a "take the lead" move looks like.
 const LEAD_FORMAT = `How to take the lead (the candidate speaks up on their own initiative to keep the conversation flowing and steer it toward topics where they shine and that matter for this role):
-- 1-3 short spoken sentences, first person, ready to say, linked so they flow as one turn. Usually: a brief genuine reaction or link to what was just said, then a bridge to a relevant topic, ending with either a concrete offer ("I could walk you through how we ...") or one specific, smart question for the interviewer.
+- 1-3 short spoken sentences, first person, ready to say, linked so they flow as one turn. Usually: a brief genuine reaction or link to what was just said, then a bridge to a relevant topic: a fitting experience, an insight, or a concrete offer ("I could walk you through how we ...").
+- End on a statement by default. Use one specific question only when it truly fits: something that matters is still unclear, the interviewer invited questions, or it's the stage where the candidate asks theirs. Never add a question just to hand the turn back, and never end two moves in a row with a question.
 - Pick the direction from: what the interviewer keeps probing and where the interview is heading, the target role, and strengths in the profile that haven't come up yet. Prefer threads the interviewer showed interest in. Don't repeat anything the candidate already said or asked.
 - Steer gently, never hijack. If the interviewer is time-boxed or following an agenda, keep it to one sentence or a question about their own topic.
 - Then, after a blank line, one line in italics saying what the move steers toward (under 15 words), so the candidate can decide whether to use it: *Why: ...*
 - Under 70 words in total. No bullets, no headings.`;
 
-const answerTask = ({ shape, words }, proactive) => `TASK: Help the candidate respond to the interviewer's latest utterance (the last "Interviewer:" line above).
+// onDemand: the candidate asked for this reply (Space / Answer / typed), so every utterance gets a response.
+const answerTask = ({ shape, words }, proactive, onDemand) => `TASK: Help the candidate respond to the interviewer's latest utterance (the last "Interviewer:" line above).
 
 First decide what kind of moment it is:
-1. A question, request or instruction directed at the candidate -> write an answer (format below). It counts even when it isn't phrased as a question: "Please send me your CV", "Plz let me know your notice period", "Tell me about yourself", "Walk me through your last project", "Share your screen", "I'd like to hear about ...", "Send me your GitHub after the call". A request is never filler.
+1. A question, request or instruction directed at the candidate -> write an answer (format below). It counts even when it isn't phrased as a question: "Please send me your CV", "Plz let me know your notice period", "Tell me about yourself", "Walk me through your last project", "Share your screen", "I'd like to hear about ...", "Send me your GitHub after the call". A request is never filler. If the utterance mixes an explanation with a question, answer the question and use the explanation as context.
 2. Small talk, a joke, a personal or friendly remark, or a light comment the candidate should react to -> start your reply with exactly "SMALLTALK:" followed by 1-2 short, natural sentences the candidate can say back, flowing as one reply. No bullets. When it touches marriage, family or daily life, follow the marriage and daily-life rule below.
-${proactive
+${onDemand
+    ? `3. The interviewer explains, describes or states something without asking anything: the company, team, product, stack or process, their opinion or a story, feedback on the candidate's answer, an answer to the candidate's own question, or the next steps -> write a response to it (see "Responses to statements" below). The candidate asked for this reply, so never answer NO_QUESTION, and don't use the LEAD: tag.
+4. Pure filler ("okay", "can you hear me", "one second") -> one short, natural line to say back ("Yep, I can hear you fine."). Never NO_QUESTION.`
+    : proactive
     ? `3. The interviewer shares something without asking: explains the company, team, product or stack, gives their opinion or a story, or answers the candidate's own question -> start your reply with exactly "LEAD:" followed by a move that takes the initiative (see "How to take the lead").
 4. Nothing to respond to (pure filler like "okay", "can you hear me", "one second") -> reply with exactly: NO_QUESTION`
     : `3. Nothing to respond to (filler like "okay", "can you hear me", the interviewer explaining the company or answering the candidate's own question) -> reply with exactly: NO_QUESTION`}
@@ -510,8 +519,14 @@ ${PERSONAL_LIFE}
 - Close with at most one of these, or none (none is the default), written as the natural last sentence of the answer, never on a separate labeled line:
   - A question back, only when the right answer really depends on something from "What is still unclear" ("Is that close to the scale you're dealing with?", "Did you mean the frontend or the API side?"). It must follow from this conversation, never be generic, and never repeat a question already asked.${proactive ? `
   - Otherwise, a hook that steers toward a fitting strength from the profile or invites a specific follow-up ("I'm happy to go into how we load-tested it, too."). Skip it when it would feel forced, the interviewer is time-boxed, or it repeats an earlier hook.` : ""}
-
-${REGISTER}${proactive ? `\n\n${LEAD_FORMAT}` : ""}`;
+${onDemand ? `
+Responses to statements (case 3): flowing spoken prose in first person, usually one or two short paragraphs, under ${Math.round(words * 0.7)} words.
+- Open with a short, genuine reaction to the specific thing they said, never a restatement of it and never generic praise.
+- Then add something of value that follows from what they explained: how it connects to the candidate's own experience in the profile, a relevant insight or trade-off, or a follow-up explanation that builds on their point (if they described their architecture or process, say how the candidate has handled something similar and what they'd watch for).
+- Feedback or a correction on the candidate's answer: acknowledge it plainly, then clarify or adjust the point. Next steps or process: acknowledge and confirm what the candidate will do. An answer to the candidate's own question: show it landed and build on it.
+- End on a statement. Add a question only when it truly fits: something the candidate needs to know is still unclear, the interviewer invited questions, or it's the stage where the candidate asks theirs. Never tack one on just to hand the turn back.
+` : ""}
+${REGISTER}${proactive && !onDemand ? `\n\n${LEAD_FORMAT}` : ""}`;
 
 const LEAD_TASK = (force) => `TASK: It's the candidate's moment to take the initiative${force ? ": they asked for a way to move the conversation forward" : ": the candidate finished speaking and there's a pause"}.
 Read the whole conversation, then write what the candidate can say next on their own initiative.
@@ -523,8 +538,8 @@ Choose the move that fits where the interview is:
 - Opening or small talk: a friendly personal line that naturally sets up the candidate's background.
 - Background or experience: connect the last point to a project in the profile that matches the role.
 - Technical: offer the next layer (a trade-off, a scale number, a failure and the fix), or ask how the interviewer's team handles it in their stack.
-- Behavioral: add the result or the lesson if it was missing, or check in ("Does that answer it, or should I go deeper on the conflict part?").
-- Role and company: ask a specific question that shows the candidate read the job description.
+- Behavioral: add the result or the lesson if it was missing.
+- Role and company: link a point from the job description to the candidate's experience, or, if it fits, ask a specific question that shows they read it.
 - Closing or candidate questions: one sharp question, plus a short line on why the role fits.
 If the candidate's last answer looks cut off or incomplete, the move can simply finish it.
 ${force ? "" : `If speaking up now would be awkward (the interviewer is clearly about to continue, is reading or typing, or the candidate is mid-thought), reply with exactly: NO_LEAD\n`}
@@ -563,7 +578,7 @@ Write it the way a friendly, confident, educated American talks in a relaxed wor
   - Openers: "So, ...", "Yeah, so ...", "Honestly, ...", "I mean, ...", "Here's the thing: ...", "The way I see it, ...", "To be honest with you, ...".
   - Reactions: "Oh, nice!", "That's awesome.", "Totally.", "For sure.", "Got it.", "Makes sense.", "Fair enough.", "I hear you.", "Oh, wow."
   - Softeners: "kind of", "pretty" ("pretty quickly"), "a little", "I'd say", "I think", "probably".
-  - Check-ins: "Does that make sense?", "What do you think?", "Does that sound fair?", "How does that sound?"
+  - Check-ins, only when a question truly fits the moment (most replies end on a statement): "Does that make sense?", "What do you think?", "Does that sound fair?", "How does that sound?"
   - Common phrasal verbs over formal verbs: figure out (not determine), set up (not establish), end up, come up with, go over, reach out, follow up, look into, wrap up.
 - Rhythm: contractions everywhere (I'm, I've, I'd, we're, that's, it's, don't, wasn't, let's, here's); mostly short and medium sentences; starting a sentence with "And", "But" or "So" is fine.
 - Never sound stiff, British or non-native: no "I would like to inform you", "kindly", "do the needful", "revert back", "as per", "whilst", "fortnight", "reckon", "shall we", "I have a doubt" (say "I have a question"), "discuss about", "explain me", "since three years" (say "for three years"), "I am working here since 2020" (say "I've been working here since 2020").
@@ -847,11 +862,12 @@ function freeContext(d) {
     + `${d.pending.length ? ` Me's questions not asked yet: ${d.pending.join("; ")}.` : ""}`;
 }
 
-export function streamAnswer(settings, transcript, question, style, rapport, direction) {
+// onDemand: asked for (Space, Answer button, typed or clicked line), so a statement gets a response, never NO_QUESTION.
+export function streamAnswer(settings, transcript, question, style, rapport, direction, onDemand = false) {
   const focus = question ? `\n\nThe utterance to respond to: "${question}"` : "";
   const extra = style ? `\n\nAdjustment requested: ${style}` : "";
   const length = LENGTHS[settings.answerLength] ?? LENGTHS.standard;
-  const base = free(settings) ? freeAnswerTask(length, settings.proactive) : answerTask(length, settings.proactive);
+  const base = free(settings) ? freeAnswerTask(length, settings.proactive, onDemand) : answerTask(length, settings.proactive, onDemand);
   const task = base + READING_FORMAT + AMERICAN_STYLE + (settings.readingGuide ? READING_GUIDE : "") + (settings.nice ? NICE + (settings.niceNow ? NICE_NOW : "") : "");
   return streamTask(settings, transcript, task + context(settings, rapport, direction) + focus + extra, length.effort, 3000);
 }
