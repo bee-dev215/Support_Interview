@@ -67,6 +67,7 @@ function setStatus(msg) {
 function renderState() {
   const paused = !capturing && transcript.length > 0;
   $("state").classList.toggle("live", capturing);
+  renderCaption();
   $("state").classList.toggle("paused", paused);
   $("stateLabel").textContent = capturing ? "Listening" : paused ? "Paused" : "Not listening";
   const [name, label, title] = capturing ? ["pause", "Pause", "Pause listening; the transcript is kept"]
@@ -193,17 +194,24 @@ function renderLive() {
   $("liveLines").replaceChildren(...active.map(([speaker, text]) => lineEl({ speaker, text }, true)));
   if (stick) scrollTranscript(true);
 
-  // Compact caption on the Answers tab.
-  $("live").hidden = active.length === 0;
-  $("live").replaceChildren(...active.map(([speaker, text]) => {
-    const row = document.createElement("div");
-    row.className = "live-row";
-    row.innerHTML = `<span class="badge ${speaker === "me" ? "badge-me" : "badge-accent"}"><span class="dot"></span></span><span class="txt"></span>`;
-    row.querySelector(".badge").append(speakerLabel(speaker, mode));
-    row.querySelector(".txt").textContent = text;
-    return row;
-  }));
+  renderCaption();
   updateEmpty();
+}
+
+// Compact caption on the Answers tab: always one line, so the answers below never move.
+// Shows the other person while they speak (else me), clipped to the latest words; while
+// listening it keeps its place even when nobody is speaking.
+function renderCaption() {
+  const speaker = live.interviewer ? "interviewer" : live.me ? "me" : null;
+  const caption = $("live");
+  caption.hidden = !capturing && !speaker;
+  if (caption.hidden) return;
+  const row = document.createElement("div");
+  row.className = `live-row${speaker ? "" : " idle"}`;
+  row.innerHTML = `<span class="badge ${speaker === "me" ? "badge-me" : "badge-accent"}"><span class="dot"></span></span><span class="txt"><span></span></span>`;
+  row.querySelector(".badge").append(speakerLabel(speaker ?? "interviewer", mode));
+  row.querySelector(".txt > span").textContent = speaker ? live[speaker] : "…";
+  caption.replaceChildren(row);
 }
 
 const transcriptPane = $("pane-transcript");

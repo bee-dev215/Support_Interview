@@ -123,9 +123,17 @@ main { flex: 1; min-height: 0; position: relative; }
   background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius);
   font-size: 13px; color: var(--text-2);
 }
-.live-row { display: flex; gap: 8px; align-items: baseline; }
+.live-row { display: flex; gap: 8px; align-items: center; height: 20px; }
 .live-row .badge { flex: none; }
-.live-row .txt { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* One line, pinned to the newest words: older text slides out on the left. */
+.live-row .txt {
+  flex: 1; min-width: 0; display: flex; justify-content: flex-end; overflow: hidden; white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 24px);
+  mask-image: linear-gradient(to right, transparent, #000 24px);
+}
+.live-row .txt > span { flex: none; }
+.live-row.idle { opacity: .45; }
+.live-row.idle .txt { justify-content: flex-start; -webkit-mask-image: none; mask-image: none; }
 
 /* Answers */
 .answers { display: flex; flex-direction: column; gap: 10px; }
